@@ -12,11 +12,11 @@ from napari.types import LayerDataTuple
 from magicgui import magicgui
 from magicgui import widgets
 
-from utils import open_image, open_segmentation
-from utils import pad_to_shape
+from .utils import open_image, open_segmentation
+from .utils import pad_to_shape
 
 from pbwrap.preprocessing.alignement import shift_array
-from ..analysis.density import multichannel_clustering
+from ..analysis import multichannel_clustering, spot_count_map
 
 
 class table_dict_type(TypedDict) :
@@ -61,10 +61,8 @@ def fish_container(
     return buttons_container, widgets_maker
 
 def dapi_container(
-        run_path, 
         voxel_size,
         table_dict,
-        dapi_folder_name = "/DAPI_Z-stacks/",
         ) :
     
     dapi_loader = load_dapi(
@@ -133,14 +131,15 @@ def locations_container(
     return location_container
 
 ##  Analysis tab
-def multichannel_clutering_container(
+def analysis_container(
         table_dict, 
         voxel_size
         ) :
     
     multichannel_cluster_instance = multichannel_cluster(table_dict, voxel_size)
-    instances = [multichannel_cluster_instance]
-    container = widgets.Container(widgets=[multichannel_cluster_instance.widget], labels=False, layout='vertical')
+    spots_count_map_instance = spot_count_map_maker(table_dict, voxel_size)
+    instances = [multichannel_cluster_instance, spots_count_map_instance]
+    container = widgets.Container(widgets=[multichannel_cluster_instance.widget, spots_count_map_instance.widget], labels=False, layout='vertical')
 
     return container, instances
 
@@ -784,7 +783,7 @@ class multichannel_cluster :
         self.Spots = table_dict['Spots']
         self.Gene_map = table_dict['Gene_map']
         self.voxel_size = voxel_size
-        self.update()
+        self.update(list(table_dict['Acquisition']['location'].unique()))
         self.widget = self.create_widget()
 
     def update(self, locations) :
@@ -806,14 +805,106 @@ class multichannel_cluster :
                     "value" : 4,
                     "label" : "min spots number :",
                 },
+                min_channel_number = {
+                    "widget_type" : "SpinBox",
+                    "min" : 1,
+                    "max" : len(self.Gene_map['target'].unique()),
+                    "value" : 1,
+                    "label" : "min rna number :",
+                },
                 call_button= "multichannel DBSCAN"
         )
-        def multichannel_DBSCAN(cluster_radius, min_spot_number) :
+        def multichannel_DBSCAN(cluster_radius, min_spot_number, min_channel_number) -> LayerDataTuple :
             multichannel_clusters = multichannel_clustering(
-
+                self.Acquisition,
+                self.Detection,
+                self.Spots,
+                self.Gene_map,
+                voxel_size= self.voxel_size,
+                cluster_radius=cluster_radius,
+                nb_min_spots= min_spot_number,
+                no_filtering=False,
             )
+
+            multichannel_clusters: pd.DataFrame = multichannel_clusters.loc[multichannel_clusters['unique_target_number'] >= min_channel_number]
+
+            c = []
+            for location_index, location in enumerate(multichannel_clusters.index.get_level_values(0).unique()) :
+                c.extend([location_index]* len(multichannel_clusters.index.get_level_values(0)[multichannel_clusters.index.get_level_values(0) == location]))
+
+            z = list(multichannel_clusters['z'].astype(int))
+            y = list(multichannel_clusters['y'].astype(int))
+            x = list(multichannel_clusters['x'].astype(int))
+            single_number = multichannel_clusters['single_molecule_number']
+            target_names = multichannel_clusters['target_names']
+
+            clusters = list(zip(c,z,y,x))
+            clusters = pd.array(clusters, dtype=int)
+
+
+
+            name = "multichannel_clusters_r{0}_n{1}".format(cluster_radius, min_spot_number)
+
+            layer_data = (clusters, 
+                         {"scale" : self.voxel_size, 
+                          "name" : name, 
+                          'ndim' : 4, 
+                          'face_color' : 'white',
+                          'symbol' : 'square',
+                          'features' : {'single_number' : single_number, 'target_names' : target_names}, 
+                          'size' : 25, 
+                          'blending' : 'additive'}
+                          , 'Points')
+            return layer_data
+            
         
         return multichannel_DBSCAN
+
+class spot_count_map_maker :
+    def __init__(self, table_dict, voxel_size):
+        self.ref_Acquisition = table_dict['Acquisition']
+        self.Detection = table_dict['Detection']
+        self.Spots = table_dict['Spots']
+        self.Gene_map = table_dict['Gene_map']
+        self.voxel_size = voxel_size
+        self.update(list(table_dict['Acquisition']['location'].unique()))
+        self.widget = self.create_widget()
+
+    def update(self, locations) :
+        self.Acquisition = self.ref_Acquisition.loc[self.ref_Acquisition['location'].isin(locations)]
+
+    def create_widget(self) :
+        @magicgui(
+                targets ={
+                    "widget_type" : "Select",
+                    "choices" : list(self.Gene_map['target'].sort_values().unique()),
+                    "value" : list(self.Gene_map['target'].unique()),
+                    "label" : " ",
+                },
+                call_button= "spot heatmap"
+        )
+        def generate_spot_count_map(targets) -> LayerDataTuple :
+            Gene_map = self.Gene_map[self.Gene_map['target'].isin(targets)]
+            spot_count_array = spot_count_map(
+                Acquisition=self.Acquisition,
+                Detection=self.Detection,
+                Spots=self.Spots,
+                Gene_map=Gene_map,
+                no_filtering=False
+            )
+
+            layer_data = (
+                spot_count_array,
+                {"name" : "spot_count_map",
+                 "scale" : self.voxel_size,
+                 "blending" : "additive",
+                 "colormap" : "inferno"
+                 },
+                 'Image'
+            )
+            return layer_data
+        return generate_spot_count_map
+
 
 
 #Location widget

@@ -3,31 +3,27 @@ import napari
 import pandas as pd
 
 from numpy.random import shuffle
-from widgets import fish_container
-from widgets import detection_container
-from widgets import dapi_container
-from widgets import segmentation_container
-from widgets import locations_container
-from widgets import multichannel_clutering_container
+from .widgets import fish_container
+from .widgets import detection_container
+from .widgets import dapi_container
+from .widgets import segmentation_container
+from .widgets import locations_container
+from .widgets import analysis_container
 from magicgui import widgets as wi
 
 from pbwrap.plot.utils import get_colors_list, _get_blue_colors, _get_green_colors, _get_orange_colors, _get_red_colors, _get_yellow_colors, _get_pink_colors, _get_purple_colors
 
 
-RUN_PATH = "/media/floricslimani/SSD4To/SSD_floricslimani/Fish_seq/Davide/2024-08-12 - SeqFISH - HeLa - Puro - R2TP1-2_Run7/"
+RUN_PATH = "/media/floricslimani/SSD4To/SSD_floricslimani/Fish_seq/Davide/2024-08-12 - SeqFISH - HeLa - Puro - R2TP1-2_Run7"
 VOXEL_SIZE = (200,97,97)
 
 
-def _main() :
+def main() :
     
     TABLES = ['Acquisition', 'Detection', 'Spots', 'Clusters', 'Drift', 'Cell', 'Colocalisation', 'Gene_map']
     tables_dict = {
         table : pd.read_feather(RUN_PATH + '/result_tables/' + table + '.feather')  for table in TABLES
     }
-
-    Drift = tables_dict['Drift']
-    Drift['drift_z'], Drift['drift_x'] = Drift['drift_x'], Drift['drift_z']
-    tables_dict['Drift'] = Drift
 
     #Init viewer
     Viewer = napari.Viewer()
@@ -35,7 +31,7 @@ def _main() :
 
     #Loading panel
     fish_buttons, fish_widgets = fish_container(VOXEL_SIZE, tables_dict, color_table)
-    dapi_buttons, dapi_widgets = dapi_container(RUN_PATH, VOXEL_SIZE, tables_dict)
+    dapi_buttons, dapi_widgets = dapi_container(VOXEL_SIZE, tables_dict)
     segmentation_buttons, segmentation_widget = segmentation_container(RUN_PATH, tables_dict, VOXEL_SIZE)
     detection_buttons, detection_widgets = detection_container(VOXEL_SIZE, tables_dict, color_table=color_table)
     
@@ -50,11 +46,11 @@ def _main() :
         )
 
     #Analysis panel
-    multichannel_DBSCAN_container, multichannel_DBSCAN_instance = multichannel_clutering_container(tables_dict, VOXEL_SIZE)
+    multichannel_DBSCAN_container, multichannel_DBSCAN_instance = analysis_container(tables_dict, VOXEL_SIZE)
     Viewer.window.add_dock_widget(multichannel_DBSCAN_container, name='Analysis', area='right', add_vertical_stretch=True, tabify=True)
 
     #Location panel
-    location_table = locations_container(tables_dict, Viewer, *detection_widgets, *fish_widgets, *dapi_widgets, *segmentation_widget)
+    location_table = locations_container(tables_dict, Viewer, *detection_widgets, *fish_widgets, *dapi_widgets, *segmentation_widget, *multichannel_DBSCAN_instance)
     Viewer.window.add_dock_widget(location_table, name='Locations', area='left', add_vertical_stretch=True,)
 
 
@@ -95,4 +91,4 @@ def create_color_table(tables_dict) :
     return color_table
 
 if __name__ == "__main__" :
-    _main()
+    main()
