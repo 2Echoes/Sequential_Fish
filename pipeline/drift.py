@@ -109,15 +109,9 @@ for location in Acquisition['location'].unique() :
     
 
     #dapi drift
-    dapi_results = prepro.find_drift(
-        reference_bead_signal= fish_reference_image,
-        drifted_bead_signal= dapi_image,
-        voxel_size= VOXEL_SIZE,
-        bead_size= BEAD_SIZE,
-        reference_threshold= ref_threshold,
-        drift_threshold_penalty= DAPI_PENALTY,
-        plot_path= plot_path + 'dapi_',
-        extended_result = True
+    dapi_results = prepro.fft_phase_correlation_drift(
+        fish_reference_image,
+        dapi_image,
     )
     dapi_results = pd.DataFrame(dapi_results)
     dapi_results['acquisition_id'] = ref_acquisition_id
@@ -130,80 +124,20 @@ for location in Acquisition['location'].unique() :
 
     print("Detecting beads & computing drift values for drifted fish stack...")
     for acquisition_id in tqdm(sub_acq[sub_acq['cycle'] != 0]['acquisition_id']) : #is ordered by cycle which is image stack ordered.
-
-        drifted_beads, drift_threshold = detection.detect_spots(
-            images= fish_other_images[stack_index],
-            threshold= drift_threshold,
-            threshold_penalty= FISH_PENALTY,
-            voxel_size= VOXEL_SIZE,
-            spot_radius= BEAD_SIZE,
-            return_threshold=True,
-            ndim=3
+        
+        drifted_fish = fish_image_stack[stack_index]
+        fish_result = prepro.fft_phase_correlation_drift(
+            reference_image= fish_reference_image,
+            drifted_image=drifted_fish,
         )
 
-        ref_bead_number = len(reference_beads)
-        drift_bead_number = len(drifted_beads)
-
-        #Finding threshold to consider beads are matching
-        shape = np.max([fish_reference_image.shape, fish_other_images[stack_index].shape], axis=0)
-        reference_distance_map, reference_indices = prepro._build_maps(spots= reference_beads, voxel_size=VOXEL_SIZE, shape=shape)
-        drifted_distance_map, drifted_indices = prepro._build_maps(spots=drifted_beads, voxel_size=VOXEL_SIZE, shape=shape)
-        distance_reference_from_drift = prepro._get_distance_from_map(spots= reference_beads, distance_map= drifted_distance_map)
-        distance_drift_from_reference = prepro._get_distance_from_map(spots= drifted_beads, distance_map= reference_distance_map)
-        distance_threshold = prepro._find_distance_threshold(
-            distance_reference_from_drift, 
-            distance_drift_from_reference,
-            output_path= plot_path + 'fish_{0}_'.format(acquisition_id),
-            )
-
-        coordinates_df = prepro._build_coordinates_df(
-             reference_beads,
-             drifted_beads,
-             reference_indices,
-             drifted_indices,
-             distance_reference_from_drift,
-             distance_drift_from_reference,
-             dim=3
-            )
-
-        coordinates_df = prepro._apply_distance_threshold(
-            coordinates_df,
-            distance_threshold
-            )
-        
-        try :
-            reference_drift, drift = prepro._find_drift_value(
-                matching_coordinates_df=coordinates_df.dropna(axis=0),
-                path_output= plot_path + 'fish_{0}_'.format(acquisition_id),
-                )
-        
-        except ValueError as e :
-            print("{}".format(e))
-            print("Adding NaN values for this acquisition")
-            bug+=1
-            os.makedirs(RUN_PATH + '/bugs/',exist_ok=True)
-            coordinates_df.reset_index(drop=False).to_feather(RUN_PATH + '/bugs/coordinates_df_{0}'.format(bug))
-
-            drift = [np.NaN, np.NaN, np.NaN]
-            found_sym_drift = np.NaN
-        
-        else :
-            found_sym_drift = all(np.array(reference_drift) == -np.array(drift))
+        fish_result = pd.DataFrame(fish_result)
+        fish_result['acquisition_id'] = acquisition_id
+        fish_result['drift_type'] = 'fish'
 
         Drift = pd.concat([
             Drift,
-            pd.DataFrame({
-                'acquisition_id' : [acquisition_id],
-                'drift_type' : ['fish'],
-                'drift_z' : [drift[0]],
-                'drift_y' : [drift[1]],
-                'drift_x' : [drift[2]],
-                'ref_bead_threshold' : [ref_threshold],
-                'drift_bead_threshold' : [drift_threshold],
-                'ref_bead_number' : [ref_bead_number],
-                'drift_bead_number' : [drift_bead_number],
-                'found_symetric_drift' : [found_sym_drift]
-            })
+            fish_result,
         ], axis=0)
 
     Drift_save = pd.concat([
