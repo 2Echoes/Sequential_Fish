@@ -3,13 +3,13 @@ This script aims at reading the input folder and preparing data folders and loca
 """
 
 from Sequential_Fish.pipeline_parameters import RUN_PATH, FOLDER_KEYS, MAP_FILENAME, cycle_regex, CYCLE_KEY, GENES_NAMES_KEY, WASHOUT_KEY_WORD
+from Sequential_Fish.pipeline.utils import open_image, auto_map_channels
 
-import CustomPandasFramework.Fish_seq.folder_preprocessing as prepro
+import Sequential_Fish.pipeline._folder_integrity as prepro
 import pandas as pd
 import os
 import re
 
-from pbwrap.utils import open_image
 
 #Reading input folder.
 file_dict = prepro.assert_run_folder_integrity(
@@ -28,10 +28,16 @@ COLUMNS = [
     "cycle",
     "full_path",
     "fish_shape",
+    "fish_map",
     "dapi_full_path",
-    "dapi_shape"
+    "dapi_shape",
+    "dapi_map"
     ]
 Acquisition = pd.DataFrame(columns=COLUMNS)
+cycle_map = pd.read_excel(RUN_PATH + '/' + MAP_FILENAME)
+cycle_number = len(cycle_map)
+color_number = len(GENES_NAMES_KEY)
+
 
 file_index = 0
 for location_index, location in enumerate(location_list) :
@@ -41,23 +47,25 @@ for location_index, location in enumerate(location_list) :
     assert len(os.listdir(dapi_full_path)) == 1
     dapi_full_path += os.listdir(dapi_full_path)[0]
     assert os.path.isfile(dapi_full_path)
-    dapi_shape = open_image(dapi_full_path).shape
+    dapi_im = open_image(dapi_full_path)
+    dapi_shape = dapi_im.shape
+    dapi_map = auto_map_channels(dapi_im, color_number=color_number, cycle_number=cycle_number)
+
     
     #Get fish_path
     fish_path = RUN_PATH + "/{0}/{1}/".format(FOLDER_KEYS.get('fish'), location)
     fish_path_list = os.listdir(fish_path)
     fish_path_list.sort() # We sort so first file is main multi-tiff file.
-    fish_shape = open_image(fish_path + fish_path_list[0]).shape[1:] #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
+    fish_im = open_image(fish_path + fish_path_list[0]) #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
+    fish_shape = fish_im.shape[1:] #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
+    fish_map = auto_map_channels(dapi_im, color_number=color_number, cycle_number=cycle_number)
     for file in fish_path_list :
         cycle = int(re.findall(cycle_regex, file)[0])
         fish_full_path = fish_path + file
         assert os.path.isfile(dapi_full_path)
 
-        Acquisition.loc[file_index] = [file_index, location, cycle, fish_full_path, fish_shape, dapi_full_path, dapi_shape]
+        Acquisition.loc[file_index] = [file_index, location, cycle, fish_full_path, fish_shape, fish_map, dapi_full_path, dapi_shape, dapi_map]
         file_index += 1
-
-#Cycle mapping
-cycle_map = pd.read_excel(RUN_PATH + '/' + MAP_FILENAME)
 
 #Integrity checks
 assert all(Acquisition['cycle'].isin(cycle_map[CYCLE_KEY])), "Some cycle are not found in map"
