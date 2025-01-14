@@ -51,16 +51,19 @@ for location_id, location in enumerate(Acquisition['location'].unique()) :
 
     #Opening images
     print("loading images...")
+    print("sub_data length",len(sub_data['acquisition_id']))
     image_path = sub_data[sub_data['cycle'] == 0]['full_path']
     assert len(image_path) == 1, image_path
     image_path = image_path.iat[0]    
     multichannel_stack = open_image(image_path)# This open 4D multichannel image (all the images are loaded in one call)
     multichannel_stack = multichannel_stack[...,:-1]
+    print(multichannel_stack.shape)
     images_list = [np.moveaxis(channel,[3,0,1,2],[0,1,2,3]) for channel in multichannel_stack]
     images_list = [
         [colors for colors in channel]
          for channel in images_list]
     image_number = len(multichannel_stack)
+    print("image_number",image_number)
     print("{0} fov found.".format(image_number))
     colors = list(zip(*images_list))
     colors_number = len(colors)

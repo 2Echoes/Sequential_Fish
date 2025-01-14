@@ -10,7 +10,7 @@ import pbwrap.detection as detection
 from pbwrap.utils import open_image
 from tqdm import tqdm
 
-from Sequential_Fish.pipeline_parameters import RUN_PATH, FISH_PENALTY, DAPI_PENALTY, SLICE_TO_REMOVE, VOXEL_SIZE, BEAD_SIZE
+from Sequential_Fish.pipeline_parameters import RUN_PATH, FISH_PENALTY, DAPI_PENALTY, DRIFT_SLICE_TO_REMOVE, VOXEL_SIZE, BEAD_SIZE
 
 SAVE_PATH = RUN_PATH + '/visuals/'
 Drift_columns = [
@@ -68,10 +68,10 @@ for location in Acquisition['location'].unique() :
     #Selecting images
     fish_image_stack = fish_image_stack[...,-1] # Selecting beads channel
     assert len(sub_acq) == len(fish_image_stack) == len(sub_acq['acquisition_id'])
-    fish_image_stack = fish_image_stack[:,SLICE_TO_REMOVE:max_z,...] # removing first slice that is noisy
+    fish_image_stack = fish_image_stack[:,DRIFT_SLICE_TO_REMOVE[0]:-DRIFT_SLICE_TO_REMOVE[1],...] # removing first slice that is noisy
     fish_reference_image = fish_image_stack[0]
     fish_other_images = fish_image_stack[1:]
-    dapi_image = dapi_image[SLICE_TO_REMOVE:max_z,-1] #To check
+    dapi_image = dapi_image[DRIFT_SLICE_TO_REMOVE[0]:-DRIFT_SLICE_TO_REMOVE[1],-1]
     assert dapi_image.shape[-1] > 100, "beads selected in wrong channel, remaining dapi shape : {0}".format(dapi_image.shape)
 
     #Reference fov has no drift
@@ -82,36 +82,22 @@ for location in Acquisition['location'].unique() :
         'drift_z' : [0],
         'drift_y' : [0],
         'drift_x' : [0],
-        'ref_bead_threshold' : [np.NaN],
-        'drift_bead_threshold' : [np.NaN],
-        'ref_bead_number' : [np.NaN],
-        'drift_bead_number' : [np.NaN],
-        'found_symetric_drift' : [True],
     })
 
     #preparing fish loop
     stack_index = 0
-    ref_threshold = None
-    drift_threshold = None
-
-
-    print("Detecting beads for reference stack...")
-    reference_beads, ref_threshold = detection.detect_spots(
-        images= fish_reference_image,
-        threshold= ref_threshold,
-        threshold_penalty= FISH_PENALTY,
-        voxel_size= VOXEL_SIZE,
-        spot_radius= BEAD_SIZE,
-        return_threshold=True,
-        ndim=3,
-    )
-
-    
 
     #dapi drift
+    if fish_reference_image.shape != dapi_image.shape :
+        matching_shape = tuple(
+            np.min([fish_reference_image.shape, dapi_image.shape], axis=0)
+            )
+    indexer = tuple([slice(axis) for axis in matching_shape])
     dapi_results = prepro.fft_phase_correlation_drift(
-        fish_reference_image,
-        dapi_image,
+        fish_reference_image[indexer],
+        dapi_image[indexer],
+        bead_size=BEAD_SIZE,
+        voxel_size=VOXEL_SIZE
     )
     dapi_results = pd.DataFrame(dapi_results)
     dapi_results['acquisition_id'] = ref_acquisition_id
@@ -122,13 +108,15 @@ for location in Acquisition['location'].unique() :
         dapi_results
     ], axis=0)
 
-    print("Detecting beads & computing drift values for drifted fish stack...")
+    print("Computing drift values for drifted fish stack...")
     for acquisition_id in tqdm(sub_acq[sub_acq['cycle'] != 0]['acquisition_id']) : #is ordered by cycle which is image stack ordered.
-        
+        stack_index +=1
         drifted_fish = fish_image_stack[stack_index]
         fish_result = prepro.fft_phase_correlation_drift(
             reference_image= fish_reference_image,
             drifted_image=drifted_fish,
+            bead_size=BEAD_SIZE,
+            voxel_size=VOXEL_SIZE,
         )
 
         fish_result = pd.DataFrame(fish_result)
@@ -144,10 +132,9 @@ for location in Acquisition['location'].unique() :
         Drift_save,
         Drift
     ], axis=0)
-    stack_index +=1
+
 
 print("All locations computed. Saving results...")
-
 Drift_save['voxel_size'] = [VOXEL_SIZE] * len(Drift_save)
 Drift_save['bead_size'] = [BEAD_SIZE] * len(Drift_save)
 Drift_save = Drift_save.reset_index(drop=True).reset_index(drop=False, names= 'drift_id')

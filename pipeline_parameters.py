@@ -4,7 +4,7 @@
 
 ################
 
-RUN_PATH = "/media/floricslimani/SSD4To/SSD_floricslimani/Fish_seq/Davide/2024-08-12 - SeqFISH - HeLa - Puro - R2TP1-2_Run7" #fullpath to main folder given by experimentalist
+RUN_PATH = "/media/floricslimani/SSD4To/SSD_floricslimani/Fish_seq/Davide/2024-09-03 - SeqFISH_Run8 - HeLa_POLR2" #fullpath to main folder given by experimentalist
 VOXEL_SIZE = (200,97,97) # size of a pixel in nanometer (z,y,x)
 WASHOUT_KEY_WORD = 'Washout' #key for washout in gene map excel
 
@@ -13,9 +13,9 @@ WASHOUT_KEY_WORD = 'Washout' #key for washout in gene map excel
 # 1. Input
 
 ################
-MAP_FILENAME = "HeLa-R2TP_Run7.xlsx"  #filename of required map file giving cycles names
+MAP_FILENAME = "HeLa-POLR2_Run8.xlsx"  #filename of required map file giving cycles names
 CYCLE_KEY = "Cycle n."
-GENES_NAMES_KEY = ["Gene1 (Ch1 - Cy5)", "Gene2 (Ch2 - Cy3)"] # Ordered by channel
+GENES_NAMES_KEY = ["Gene1 (Ch1 - Cy3 - CAM_1)"] # Ordered by channel
 
 
 cycle_regex = "img(\d+)_000_000000_0000000000.ome.tif" #regex to catch cycle number from tif filename.
@@ -64,7 +64,7 @@ CLUSTER_SIZE = 400 #size of cluster in nanometer (radius for DBScan algorithm)
 MIN_SPOT_PER_CLUSTER = 4 #
 
 ARTIFACT_RADIUS = 1400 # Radius of spots artifact to remove in nanometers.
-
+DETECTION_SLICE_TO_REMOVE = [1,None] # number of slice you want to remove bottom/top If you don't want to remove use None. ie : 1,None removes one slice from the bottom and none from the top
 
 
 
@@ -79,7 +79,8 @@ FISH_THRESHOLD = None #Helpers for beads detection threshold
 DAPI_THRESHOLD = None
 DAPI_PENALTY = 2
 FISH_PENALTY = 1
-SLICE_TO_REMOVE = 10 # Number of slice to remove to avoid detecting noise
+DRIFT_SLICE_TO_REMOVE = [10,20] # Number of slice to remove to avoid detecting noise
+
 
 
 
@@ -93,3 +94,9 @@ SLICE_TO_REMOVE = 10 # Number of slice to remove to avoid detecting noise
 COLOC_DISTANCE = 300 #distance to consider for colocalization events in nanometers
 quantif_MAX_WORKERS = 10 #Number of threads to use while computing cells features (small_process, currently good performance with 10)
 COLOC_POPULATION = ('all', 'free', 'clustered') # population to consider when computing colocalisation
+
+
+#### Integrity check ####
+
+if 0 in DETECTION_SLICE_TO_REMOVE : raise ValueError("Error with 'DETECTION_SLICE_TO_REMOVE' parameter. 0 value is not allowed, if you don't want to remove slice use None instead.")
+if 0 in DRIFT_SLICE_TO_REMOVE : raise ValueError("Error with 'DRIFT_SLICE_TO_REMOVE' parameter. 0 value is not allowed, if you don't want to remove slice use None instead.")
