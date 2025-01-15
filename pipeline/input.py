@@ -3,9 +3,9 @@ This script aims at reading the input folder and preparing data folders and loca
 """
 
 from Sequential_Fish.pipeline_parameters import RUN_PATH, FOLDER_KEYS, MAP_FILENAME, cycle_regex, CYCLE_KEY, GENES_NAMES_KEY, WASHOUT_KEY_WORD, HAS_BEAD_CHANNEL
-from pipeline.tools.utils import open_image, auto_map_channels
+from Sequential_Fish.pipeline.tools.utils import open_image, auto_map_channels
 
-import Sequential_Fish.pipeline._folder_integrity as prepro
+import pipeline.tools._folder_integrity as prepro
 import pandas as pd
 import os
 import re
@@ -50,7 +50,7 @@ for location_index, location in enumerate(location_list) :
     dapi_im = open_image(dapi_full_path)
     dapi_shape = dapi_im.shape
     dapi_map = auto_map_channels(dapi_im, color_number=color_number, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
-
+    print("dapi_map : ", dapi_map)
     
     #Get fish_path
     fish_path = RUN_PATH + "/{0}/{1}/".format(FOLDER_KEYS.get('fish'), location)
@@ -59,6 +59,7 @@ for location_index, location in enumerate(location_list) :
     fish_im = open_image(fish_path + fish_path_list[0]) #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
     fish_shape = fish_im.shape[1:] #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
     fish_map = auto_map_channels(dapi_im, color_number=color_number, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
+    print("fish_map : ", fish_map)
     for file in fish_path_list :
         cycle = int(re.findall(cycle_regex, file)[0])
         fish_full_path = fish_path + file
