@@ -24,6 +24,7 @@ from Sequential_Fish.pipeline_parameters import RUN_PATH, VOXEL_SIZE, SPOT_SIZE,
 
 #Loading data
 Acquisition = pd.read_feather(RUN_PATH + "/result_tables/Acquisition.feather")
+print(Acquisition)
 
 #preparing folders
 save_path = RUN_PATH + "/result_tables/"
