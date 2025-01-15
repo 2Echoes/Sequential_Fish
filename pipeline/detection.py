@@ -69,7 +69,7 @@ for location_id, location in enumerate(Acquisition['location'].unique()) :
 
     #Preparing threads arguments
     Detection = pd.DataFrame({
-        'acquisition_id' : sub_data['acquisition_id']
+        'acquisition_id' : list(sub_data['acquisition_id'])
         ,'visual_name' : [visual_path] * image_number
         ,'filename' : list(sub_data['full_path'])
         ,'voxel_size' : [tuple(VOXEL_SIZE)] * image_number
