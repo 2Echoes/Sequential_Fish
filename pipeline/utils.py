@@ -2,16 +2,11 @@ import numpy as np
 from czifile import imread as _imread
 from bigfish.stack import read_image as _read_image
 
-class MappingError(ValueError) :
+class MappingError(Exception) :
     """
     Raised when user inputs an incorrect image mapping.
     """
-    def __init__(self, map_ ,*args: object) -> None:
-        super().__init__(*args)
-        self.map_ = map_
-
-    def get_map(self) :
-        return self.map_
+    pass
 
 def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int) :
     """
