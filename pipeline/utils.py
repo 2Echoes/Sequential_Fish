@@ -16,6 +16,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
     dim = image.ndim
     shape = image.shape
     reducing_list = list(shape)
+    map_ = dict()
 
     try :
         c_idx = shape.index(color_number + bead_channel)
@@ -37,7 +38,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
     #Set the biggest dimension to y
     y_val = max(reducing_list)
     y_idx = shape.index(y_val)
-    map_ = {'y' : y_idx}
+    map_['y'] = y_idx
 
     #2nd biggest set to x
     reducing_list[y_idx] = -1
