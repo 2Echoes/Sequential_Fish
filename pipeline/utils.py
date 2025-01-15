@@ -24,7 +24,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
         raise MappingError("{0} colors channels are expected from experimental file but no matching axis was found in shape {1}.".format(color_number, shape))
     else :
         map_['c'] = c_idx
-        reducing_list.remove(color_number)
+        reducing_list.remove(color_number + bead_channel)
 
     if dim > 4 : #Else dapi is being mapped and has only one cycle.
         try :
