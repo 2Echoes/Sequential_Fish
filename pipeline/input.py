@@ -36,6 +36,7 @@ COLUMNS = [
 Acquisition = pd.DataFrame(columns=COLUMNS)
 cycle_map = pd.read_excel(RUN_PATH + '/' + MAP_FILENAME)
 cycle_number = len(cycle_map)
+print(cycle_map)
 color_number = len(GENES_NAMES_KEY)
 
 
