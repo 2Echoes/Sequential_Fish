@@ -19,6 +19,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
     shape = image.shape
     reducing_list = list(shape)
     map_ = dict()
+    print("dim : ", dim)
 
     try :
         c_idx = shape.index(color_number + bead_channel)
@@ -52,7 +53,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
     reducing_list.remove(y_val)
     reducing_list.remove(x_val)
     reducing_list.remove(-1)
-    if dim > 5 : reducing_list.remove(-1)
+    if dim > 4 : reducing_list.remove(-1)
 
     #Remaning value set to z
     z_val = reducing_list[0]
