@@ -51,8 +51,8 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
     map_['x'] = x_idx
     reducing_list.remove(y_val)
     reducing_list.remove(x_val)
-    reducing_list.remove(color_number + bead_channel)
-    reducing_list.remove(cycle_number)
+    reducing_list.remove(-1)
+    if dim > 5 : reducing_list.remove(-1)
 
     #Remaning value set to z
     z_val = reducing_list[0]
