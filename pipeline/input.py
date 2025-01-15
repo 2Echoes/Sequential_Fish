@@ -58,7 +58,7 @@ for location_index, location in enumerate(location_list) :
     fish_path_list.sort() # We sort so first file is main multi-tiff file.
     fish_im = open_image(fish_path + fish_path_list[0]) #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
     fish_shape = fish_im.shape[1:] #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
-    fish_map = auto_map_channels(dapi_im, color_number=color_number, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
+    fish_map = auto_map_channels(fish_im, color_number=color_number, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
     print("fish_map : ", fish_map)
     for file in fish_path_list :
         cycle = int(re.findall(cycle_regex, file)[0])
