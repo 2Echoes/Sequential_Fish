@@ -6,8 +6,7 @@ import os
 import pandas as pd
 import numpy as np
 import pbwrap.preprocessing.alignement as prepro
-import pbwrap.detection as detection
-from pbwrap.utils import open_image
+from Sequential_Fish.pipeline.tools import open_image, reorder_image_stack
 from tqdm import tqdm
 
 from Sequential_Fish.pipeline_parameters import RUN_PATH, FISH_PENALTY, DAPI_PENALTY, DRIFT_SLICE_TO_REMOVE, VOXEL_SIZE, BEAD_SIZE
@@ -50,15 +49,23 @@ for location in Acquisition['location'].unique() :
     print("opening images...")
     sub_acq = Acquisition.loc[Acquisition["location"] == location].sort_values('cycle')
     dapi_path = sub_acq['dapi_full_path'].unique()
+    dapi_map = sub_acq['dapi_map'].unique()
     assert len(dapi_path) == 1, 'multiple files for dapi found : {0}'.format(len(dapi_path))
+    assert len(dapi_map) == 1, 'multiple maps for dapi found : {0}'.format(len(dapi_path))
     dapi_path = dapi_path[0]
+    dapi_map = dapi_map[0]
 
     fish_path = sub_acq.loc[sub_acq['cycle']==0]['full_path']
+    fish_map = sub_acq.loc[sub_acq['cycle']==0]['dapi_map']
     assert len(fish_path) == 1, 'multiple files for fish found : {0}'.format(len(fish_path))
+    assert len(fish_map) == 1, 'multiple maps for fish found : {0}'.format(len(fish_path))
     fish_path = fish_path.iat[0]
+    fish_map = fish_map.iat[0]
 
     dapi_image = open_image(dapi_path)
+    dapi_image = reorder_image_stack(dapi_image, dapi_map)
     fish_image_stack = open_image(fish_path)
+    fish_image_stack = reorder_image_stack(fish_image_stack, fish_map)
 
     max_z = max(
         dapi_image.shape[0],

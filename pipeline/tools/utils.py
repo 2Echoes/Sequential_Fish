@@ -62,8 +62,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
 
 def reorder_image_stack(image, map) :
     
-    if image.ndim != len(map) : raise ValueError("image stack dimension and map axis number missmatch.")
-    else : dim = image.ndim
+    dim = image.ndim
 
     if dim == 5 :
         new_order = (map['cycles'], map['z'], map['y'], map['x'], map['c'])
