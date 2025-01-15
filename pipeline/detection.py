@@ -51,6 +51,7 @@ for location_id, location in enumerate(Acquisition['location'].unique()) :
     assert len(image_path) == 1, image_path
     image_path = image_path.iat[0]    
     multichannel_stack = open_image(image_path)# This open 4D multichannel image (all the images are loaded in one call)
+    print("image_map : ", image_map)
     multichannel_stack = reorder_image_stack(multichannel_stack, image_map)
     multichannel_stack = multichannel_stack[...,:-1]
     print(multichannel_stack.shape)
