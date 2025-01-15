@@ -8,7 +8,7 @@ class MappingError(Exception) :
     """
     pass
 
-def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int) :
+def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, bead_channel = True) :
     """
     Assume x and y are the biggest dimension.
     """
@@ -18,7 +18,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int) :
     reducing_list = list(shape)
 
     try :
-        c_idx = shape.index(color_number)
+        c_idx = shape.index(color_number + bead_channel)
     except ValueError :
         raise MappingError("{0} colors channels are expected from experimental file but no matching axis was found in shape {1}.".format(color_number, shape))
     else :
