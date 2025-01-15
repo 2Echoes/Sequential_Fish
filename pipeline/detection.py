@@ -6,15 +6,9 @@ This script use results from FishSeq_pipeline_segmentation.py that must be run b
 """
 
 import os
-import threading
 import numpy as np
 import pandas as pd
-import bigfish.stack as stack
-import pbwrap.plot as plot
-import bigfish.detection as bigfish
-import pbwrap.detection as detection
-from pbwrap.utils import open_image
-from CustomPandasFramework.utils import get_datetime
+from Sequential_Fish.pipeline.tools import open_image, reorder_image_stack
 from concurrent.futures import ThreadPoolExecutor
 from pbwrap.detection.multithread import multi_thread_full_detection, build_Spots_and_Cluster_df
 from tqdm import tqdm
@@ -53,9 +47,11 @@ for location_id, location in enumerate(Acquisition['location'].unique()) :
     print("loading images...")
     print("sub_data length",len(sub_data['acquisition_id']))
     image_path = sub_data[sub_data['cycle'] == 0]['full_path']
+    image_map = sub_data[sub_data['cycle'] == 0]['fish_map']
     assert len(image_path) == 1, image_path
     image_path = image_path.iat[0]    
     multichannel_stack = open_image(image_path)# This open 4D multichannel image (all the images are loaded in one call)
+    multichannel_stack = reorder_image_stack(multichannel_stack, image_map)
     multichannel_stack = multichannel_stack[...,:-1]
     print(multichannel_stack.shape)
     images_list = [np.moveaxis(channel,[3,0,1,2],[0,1,2,3]) for channel in multichannel_stack]
