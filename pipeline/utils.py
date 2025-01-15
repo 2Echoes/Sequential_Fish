@@ -42,6 +42,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
 
     #2nd biggest set to x
     reducing_list[y_idx] = -1
+    print(reducing_list)
     x_val = max(reducing_list)
     x_idx = reducing_list.index(x_val)
     reducing_list[y_idx] = y_val
