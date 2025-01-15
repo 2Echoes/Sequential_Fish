@@ -3,7 +3,7 @@ This script aims at reading the input folder and preparing data folders and loca
 """
 
 from Sequential_Fish.pipeline_parameters import RUN_PATH, FOLDER_KEYS, MAP_FILENAME, cycle_regex, CYCLE_KEY, GENES_NAMES_KEY, WASHOUT_KEY_WORD, HAS_BEAD_CHANNEL
-from Sequential_Fish.pipeline.utils import open_image, auto_map_channels
+from pipeline.tools.utils import open_image, auto_map_channels
 
 import Sequential_Fish.pipeline._folder_integrity as prepro
 import pandas as pd
