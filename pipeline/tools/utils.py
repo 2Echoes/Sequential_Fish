@@ -26,7 +26,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
         raise MappingError("{0} colors channels are expected from experimental file but no matching axis was found in shape {1}.".format(color_number, shape))
     else :
         map_['c'] = c_idx
-        reducing_list.remove(color_number + bead_channel)
+        reducing_list[c_idx] = -1
 
     if dim > 4 : #Else dapi is being mapped and has only one cycle.
         try :
@@ -35,7 +35,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
             raise MappingError("{0} cycles are expected from experimental file but no matching axis was found in shape {1}.".format(cycle_number, shape))
         else :
             map_['cycles'] = cycles_idx
-            reducing_list.remove(cycle_number)
+            reducing_list[cycles_idx] = -1
 
     #Set the biggest dimension to y
     y_val = max(reducing_list)
@@ -51,6 +51,8 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
     map_['x'] = x_idx
     reducing_list.remove(y_val)
     reducing_list.remove(x_val)
+    reducing_list.remove(color_number + bead_channel)
+    reducing_list.remove(cycle_number)
 
     #Remaning value set to z
     z_val = reducing_list[0]
