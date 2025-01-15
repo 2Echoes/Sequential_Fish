@@ -72,7 +72,7 @@ def reorder_image_stack(image, map) :
     elif dim == 4 :
         new_order = (map['z'], map['y'], map['x'], map['c'])
 
-    image = np.moveaxis(new_order, [0,1,2,3,4])
+    image = np.moveaxis(image, new_order, [0,1,2,3,4])
     return image
 
 def open_image(path:str, map=None) :
