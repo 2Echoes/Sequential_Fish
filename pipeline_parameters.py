@@ -7,6 +7,7 @@
 RUN_PATH = "/media/floricslimani/SSD4To/SSD_floricslimani/Fish_seq/Davide/2024-09-03 - SeqFISH_Run8 - HeLa_POLR2" #fullpath to main folder given by experimentalist
 VOXEL_SIZE = (200,97,97) # size of a pixel in nanometer (z,y,x)
 WASHOUT_KEY_WORD = 'Washout' #key for washout in gene map excel
+HAS_BEAD_CHANNEL = True
 
 ################
 
