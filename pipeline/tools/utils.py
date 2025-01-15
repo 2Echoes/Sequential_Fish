@@ -63,7 +63,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
 def reorder_image_stack(image, map) :
     
     dim = image.ndim
-
+    print(map)
     if dim == 5 :
         new_order = (map['cycles'], map['z'], map['y'], map['x'], map['c'])
     elif dim == 4 :
