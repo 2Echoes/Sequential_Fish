@@ -1,5 +1,6 @@
 import numpy as np
 import datetime as dt
+import re
 from czifile import imread as _imread
 from bigfish.stack import read_image as _read_image
 
@@ -19,7 +20,6 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
     shape = image.shape
     reducing_list = list(shape)
     map_ = dict()
-    print("dim : ", dim)
 
     try :
         c_idx = shape.index(color_number + bead_channel)
@@ -66,13 +66,16 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
 def reorder_image_stack(image, map) :
     
     dim = image.ndim
-    print(map)
     if dim == 5 :
         new_order = (map['cycles'], map['z'], map['y'], map['x'], map['c'])
+        ref_order = [0,1,2,3,4]
     elif dim == 4 :
         new_order = (map['z'], map['y'], map['x'], map['c'])
+        ref_order = [0,1,2,3]
+    else :
+        raise AssertionError()
 
-    image = np.moveaxis(image, new_order, [0,1,2,3,4])
+    image = np.moveaxis(image, new_order, ref_order)
     return image
 
 def open_image(path:str, map=None) :
@@ -96,3 +99,20 @@ def open_image(path:str, map=None) :
 
 def get_datetime():
     return dt.datetime.now().strftime("%Y%m%d %H-%M-%S")
+
+
+def _find_one_or_NaN(path, regex) :
+
+    if isinstance(path, str) :
+        res = re.findall(regex, path)
+        if len(res) > 1 : raise ValueError("cycle regex yields ambiguous results.")
+        elif len(res) == 0 : raise ValueError("cycle regex yields no results for {0}.".format(path))
+        res = int(res[0])
+    
+    elif np.isnan(path) :
+        res = np.NaN
+    
+    else :
+        raise AssertionError("Unexpected element in Acquisition['full_path'] : {0}".format(path))
+    
+    return res

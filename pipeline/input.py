@@ -3,12 +3,13 @@ This script aims at reading the input folder and preparing data folders and loca
 """
 
 from Sequential_Fish.pipeline_parameters import RUN_PATH, FOLDER_KEYS, MAP_FILENAME, cycle_regex, CYCLE_KEY, GENES_NAMES_KEY, WASHOUT_KEY_WORD, HAS_BEAD_CHANNEL
-from Sequential_Fish.pipeline.tools.utils import open_image, auto_map_channels
+from Sequential_Fish.pipeline.tools.utils import open_image, auto_map_channels, _find_one_or_NaN
 
 import Sequential_Fish.pipeline.tools._folder_integrity as prepro
 import pandas as pd
 import os
-import re
+import warnings as warn
+import numpy as np
 
 
 #Reading input folder.
@@ -19,7 +20,8 @@ file_dict = prepro.assert_run_folder_integrity(
     )
 location_list = list(file_dict.keys())
 location_list.sort()
-print("{0} locations found.".format(len(location_list)))
+location_number = len(location_list)
+print("{0} locations found.".format(location_number))
 
 #Init pandas DF
 COLUMNS = [
@@ -35,14 +37,17 @@ COLUMNS = [
     ]
 Acquisition = pd.DataFrame(columns=COLUMNS)
 cycle_map = pd.read_excel(RUN_PATH + '/' + MAP_FILENAME)
-## TO REMOVE
-cycle_map = cycle_map.drop(21)
-print(cycle_map)
 color_number = len(GENES_NAMES_KEY)
 cycle_number = len(cycle_map)
-
+print("Expected {0} colors.".format(color_number))
+print("Expected {0} cycles.".format(cycle_number))
 
 file_index = 0
+Acquisition['acquisition_id'] = np.arange(len(location_list)*cycle_number)
+Acquisition['location'] = location_list * cycle_number
+cycles_list = list(cycle_map[CYCLE_KEY])*location_number
+cycles_list.sort()
+Acquisition['cycle'] = cycles_list
 for location_index, location in enumerate(location_list) :
     
     #Get dapi_path
@@ -53,29 +58,41 @@ for location_index, location in enumerate(location_list) :
     dapi_im = open_image(dapi_full_path)
     dapi_shape = dapi_im.shape
     dapi_map = auto_map_channels(dapi_im, color_number=color_number, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
-    print("dapi_map : ", dapi_map)
+
+    #Setting dapi informations
+    index = Acquisition[Acquisition['location'] == location].index
+    Acquisition.loc[index, ['dapi_full_path']] = dapi_full_path
+    Acquisition.loc[index, ['dapi_shape']] = pd.Series((tuple(dapi_shape),)*cycle_number, index=index)
+    Acquisition.loc[index, ['dapi_map']] = pd.Series((dapi_map,)* cycle_number, index=index)
     
-    #Get fish_path
+    #Setting general fish informations
     fish_path = RUN_PATH + "/{0}/{1}/".format(FOLDER_KEYS.get('fish'), location)
     fish_path_list = os.listdir(fish_path)
-    fish_path_list.sort() # We sort so first file is main multi-tiff file.
+    fish_path_list.sort() # THIS MUST GIVE CYCLE ORDERED LIST ie : filename cycle matches map cycles and rest of filename doesn't change list order.
     fish_im = open_image(fish_path + fish_path_list[0]) #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
-    fish_shape = fish_im.shape[1:] #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
+    fish_shape = fish_im.shape[1:]
     fish_map = auto_map_channels(fish_im, color_number=color_number, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
-    print("fish_map : ", fish_map)
-    for file in fish_path_list :
-        cycle = int(re.findall(cycle_regex, file)[0])
-        fish_full_path = fish_path + file
-        assert os.path.isfile(dapi_full_path)
+    
+    full_path_list = [fish_path + file for file in fish_path_list]
+    while len(full_path_list) < len(index) :
+        full_path_list.append(np.NaN)
 
-        Acquisition.loc[file_index] = [file_index, location, cycle, fish_full_path, fish_shape, fish_map, dapi_full_path, dapi_shape, dapi_map]
-        file_index += 1
+    Acquisition.loc[index, "fish_shape"] = pd.Series((fish_shape,)*cycle_number, index=index)
+    Acquisition.loc[index, "fish_map"] = pd.Series((fish_map,)*cycle_number, index=index)
+    Acquisition.loc[index, "full_path"] = full_path_list
+    
+    cycle_regex_result = Acquisition.loc[:, 'full_path'].apply(_find_one_or_NaN, regex=cycle_regex)
 
 #Integrity checks
 assert all(Acquisition['cycle'].isin(cycle_map[CYCLE_KEY])), "Some cycle are not found in map"
 assert len(cycle_map[CYCLE_KEY] == len(Acquisition['cycle'])), "{0} column length doesn't match cycle number ({1})".format(CYCLE_KEY, len(Acquisition['cycle']))
 for key in GENES_NAMES_KEY : 
     assert len(cycle_map[key] == len(Acquisition['cycle'])), "{0} column length doesn't match cycle number ({1})".format(key, len(Acquisition['cycle']))
+
+cycle_regex_result = Acquisition.loc[:, 'full_path'].apply(_find_one_or_NaN, regex=cycle_regex)
+cycles_match = all(Acquisition.loc[~Acquisition['full_path'].isna(),"cycle"] == cycle_regex_result[~cycle_regex_result.isna()])
+if not cycles_match : raise ValueError("Missmatch between cycles assigned and cycles found in filenames. Maybe filenames sorting didn't lead could not be used to sort on cycles.")
+if any(Acquisition['full_path'].isna()) : warn.warn("Warning : Some images registered in metadata were not found in folder. Ignore this message if some files were deleted after acquisition, in such a case pipeline should return as well 'OME series failed to read [...]. Missing data are zeroed' warning. ")
 
 Acquisition = pd.merge(
     left=Acquisition,
