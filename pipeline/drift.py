@@ -49,16 +49,13 @@ for location in Acquisition['location'].unique() :
     print("opening images...")
     sub_acq = Acquisition.loc[Acquisition["location"] == location].sort_values('cycle')
     dapi_path = sub_acq['dapi_full_path'].unique()
-    dapi_map = sub_acq['dapi_map'].unique()
+    dapi_map = sub_acq['dapi_map'].iat[0]
     assert len(dapi_path) == 1, 'multiple files for dapi found : {0}'.format(len(dapi_path))
-    assert len(dapi_map) == 1, 'multiple maps for dapi found : {0}'.format(len(dapi_path))
     dapi_path = dapi_path[0]
-    dapi_map = dapi_map[0]
 
     fish_path = sub_acq.loc[sub_acq['cycle']==0]['full_path']
-    fish_map = sub_acq.loc[sub_acq['cycle']==0]['dapi_map']
+    fish_map = sub_acq.loc[sub_acq['cycle']==0]['fish_map']
     assert len(fish_path) == 1, 'multiple files for fish found : {0}'.format(len(fish_path))
-    assert len(fish_map) == 1, 'multiple maps for fish found : {0}'.format(len(fish_path))
     fish_path = fish_path.iat[0]
     fish_map = fish_map.iat[0]
 
@@ -78,8 +75,7 @@ for location in Acquisition['location'].unique() :
     fish_image_stack = fish_image_stack[:,DRIFT_SLICE_TO_REMOVE[0]:-DRIFT_SLICE_TO_REMOVE[1],...] # removing first slice that is noisy
     fish_reference_image = fish_image_stack[0]
     fish_other_images = fish_image_stack[1:]
-    dapi_image = dapi_image[DRIFT_SLICE_TO_REMOVE[0]:-DRIFT_SLICE_TO_REMOVE[1],-1]
-    assert dapi_image.shape[-1] > 100, "beads selected in wrong channel, remaining dapi shape : {0}".format(dapi_image.shape)
+    dapi_image = dapi_image[DRIFT_SLICE_TO_REMOVE[0]:-DRIFT_SLICE_TO_REMOVE[1],:,:,-1]
 
     #Reference fov has no drift
     ref_acquisition_id = sub_acq[sub_acq['cycle'] == 0]['acquisition_id'].iat[0]
@@ -95,10 +91,13 @@ for location in Acquisition['location'].unique() :
     stack_index = 0
 
     #dapi drift
+    print(fish_reference_image.shape, dapi_image.shape)
     if fish_reference_image.shape != dapi_image.shape :
         matching_shape = tuple(
             np.min([fish_reference_image.shape, dapi_image.shape], axis=0)
             )
+    else : matching_shape = fish_reference_image.shape
+    print('matching shape : ', matching_shape)
     indexer = tuple([slice(axis) for axis in matching_shape])
     dapi_results = prepro.fft_phase_correlation_drift(
         fish_reference_image[indexer],
