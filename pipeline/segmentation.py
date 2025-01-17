@@ -9,7 +9,7 @@ import pbwrap.segmentation as segm
 import bigfish.plot as plot
 
 from tqdm import tqdm
-from pbwrap.utils import open_image
+from Sequential_Fish.pipeline.tools.utils import open_image, reorder_image_stack
 
 #### USER PARAMETERS
 from Sequential_Fish.pipeline_parameters import RUN_PATH, MODEL_DICT, OBJECT_SIZE_DICT, PLOT_VISUALS
@@ -37,12 +37,13 @@ for location in tqdm(Acquisition['location'].unique()) :
 
     #Nucleus_segmentation
     nucleus_path = sub_data['dapi_full_path'].unique()
+    nucleus_map = sub_data['dapi_map'].iat[0]
     assert len(nucleus_path) == 1, '{}'.format(nucleus_path)
     nucleus_path = nucleus_path[0]
     nucleus_image = open_image(nucleus_path)
+    nucleus_image = reorder_image_stack(nucleus_image, nucleus_map)
     assert nucleus_image.ndim == 4, nucleus_image.shape
-    assert nucleus_image.shape[1] == 2, nucleus_image.shape
-    nucleus_image = nucleus_image[:,0]
+    nucleus_image = nucleus_image[:,:,:,-1]
     nucleus_image_save = nucleus_image.copy()
     nucleus_image = np.mean(nucleus_image, axis=0)
     nucleus_label = segm.Nucleus_segmentation(
@@ -53,13 +54,11 @@ for location in tqdm(Acquisition['location'].unique()) :
     )
 
     #Cytoplasm segmentation
-    cytoplasm_path = sub_data['full_path'].iat[1] #First washout, also avoid opening all images together.
+    cytoplasm_path = sub_data['full_path'].iat[0] #First washout, also avoid opening all images together.
+    cytoplasm_map = sub_data['fish_map'].iat[0] #First washout, also avoid opening all images together.
     cytoplasm_image = open_image(cytoplasm_path)
-    assert cytoplasm_image.shape[0]%3 == 0
-    cytoplasm_image = cytoplasm_image.reshape(
-        3, int(cytoplasm_image.shape[0]/3), cytoplasm_image.shape[1], cytoplasm_image.shape[2]
-    )
-    cytoplasm_image = cytoplasm_image[-1]
+    cytoplasm_image = reorder_image_stack(cytoplasm_image, cytoplasm_map)
+    cytoplasm_image = cytoplasm_image[0,:,:,:,-1]
     cytoplasm_image = np.mean(cytoplasm_image, axis=0)
 
     #Segmentation
