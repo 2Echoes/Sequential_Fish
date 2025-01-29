@@ -68,7 +68,6 @@ ARTIFACT_RADIUS = 1400 # Radius of spots artifact to remove in nanometers.
 DETECTION_SLICE_TO_REMOVE = [1,None] # number of slice you want to remove bottom/top If you don't want to remove use None. ie : 1,None removes one slice from the bottom and none from the top
 
 
-
 ################
 
 # 4. Drift

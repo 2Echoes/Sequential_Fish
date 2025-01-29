@@ -53,3 +53,22 @@ def pad_to_shape(array : np.ndarray, new_shape) :
     array = np.pad(array, pad_width_list)
 
     return array
+
+
+def reorder_image_stack(image, map) :
+    """
+    will order image to cycles-zyxc
+    """
+    
+    dim = image.ndim
+    if dim == 5 :
+        new_order = (map['cycles'], map['z'], map['y'], map['x'], map['c'])
+        ref_order = [0,1,2,3,4]
+    elif dim == 4 :
+        new_order = (map['z'], map['y'], map['x'], map['c'])
+        ref_order = [0,1,2,3]
+    else :
+        raise AssertionError()
+
+    image = np.moveaxis(image, new_order, ref_order)
+    return image

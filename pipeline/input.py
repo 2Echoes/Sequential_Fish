@@ -3,7 +3,7 @@ This script aims at reading the input folder and preparing data folders and loca
 """
 
 from Sequential_Fish.pipeline_parameters import RUN_PATH, FOLDER_KEYS, MAP_FILENAME, cycle_regex, CYCLE_KEY, GENES_NAMES_KEY, WASHOUT_KEY_WORD, HAS_BEAD_CHANNEL
-from Sequential_Fish.pipeline.tools.utils import open_image, auto_map_channels, _find_one_or_NaN
+from Sequential_Fish.pipeline.tools.utils import open_image, auto_map_channels, _find_one_or_NaN, reorder_image_stack
 
 import Sequential_Fish.pipeline.tools._folder_integrity as prepro
 import pandas as pd
@@ -58,6 +58,7 @@ for location_index, location in enumerate(location_list) :
     dapi_im = open_image(dapi_full_path)
     dapi_shape = dapi_im.shape
     dapi_map = auto_map_channels(dapi_im, color_number=color_number, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
+    dapi_reodered_shape = reorder_image_stack(dapi_im, dapi_map).shape
 
     #Setting dapi informations
     index = Acquisition[Acquisition['location'] == location].index
@@ -70,8 +71,10 @@ for location_index, location in enumerate(location_list) :
     fish_path_list = os.listdir(fish_path)
     fish_path_list.sort() # THIS MUST GIVE CYCLE ORDERED LIST ie : filename cycle matches map cycles and rest of filename doesn't change list order.
     fish_im = open_image(fish_path + fish_path_list[0]) #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
-    fish_shape = fish_im.shape[1:]
     fish_map = auto_map_channels(fish_im, color_number=color_number, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
+    fish_shape = fish_im.shape[:fish_map['cycles']] + fish_im.shape[(fish_map['cycles'] + 1):] #1cycle per acquisition
+    reoderdered_shape = reorder_image_stack(fish_im, fish_map).shape
+    fish_reodered_shape = reoderdered_shape[1:]
     
     full_path_list = [fish_path + file for file in fish_path_list]
     while len(full_path_list) < len(index) :
@@ -80,6 +83,7 @@ for location_index, location in enumerate(location_list) :
     Acquisition.loc[index, "fish_shape"] = pd.Series((fish_shape,)*cycle_number, index=index)
     Acquisition.loc[index, "fish_map"] = pd.Series((fish_map,)*cycle_number, index=index)
     Acquisition.loc[index, "full_path"] = full_path_list
+    Acquisition.loc[index, "fish_reodered_shape"] = pd.Series((fish_reodered_shape,)*cycle_number, index=index)
     
     cycle_regex_result = Acquisition.loc[:, 'full_path'].apply(_find_one_or_NaN, regex=cycle_regex)
 

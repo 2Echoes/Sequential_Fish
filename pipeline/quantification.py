@@ -19,13 +19,14 @@ Detection = pd.read_feather(RUN_PATH + '/result_tables/Detection.feather')
 
 #Matching Drift with Spots
 spots_len = len(Spots)
-Spots = pd.merge(
-    Spots,
-    Detection.loc[:,['detection_id','acquisition_id']],
-    on= 'detection_id',
-    how='inner'
-)
-assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Detection merge."
+if 'acquisition_id' not in Spots.columns :
+    Spots = pd.merge(
+        Spots,
+        Detection.loc[:,['detection_id','acquisition_id']],
+        on= 'detection_id',
+        how='inner'
+    )
+    assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Detection merge."
 Spots = pd.merge(
     Spots,
     Drift.loc[Drift['drift_type'] == 'fish'].loc[:,['acquisition_id', 'drift_z','drift_y','drift_x']],
@@ -36,25 +37,27 @@ assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Drift merge,
 
 Spots = pd.merge(
     Spots,
-    Acquisition.loc[:,['acquisition_id', 'fish_shape']],
+    Acquisition.loc[:,['acquisition_id', 'fish_reodered_shape']],
     on= 'acquisition_id',
     how='inner'
 )
 assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(spots_len,len(Spots))
-z_shape,y_shape,x_shape,_ = zip(*list(Spots['fish_shape']))
+z_shape,y_shape,x_shape,_ = zip(*list(Spots['fish_reodered_shape']))
 Spots['z_shape'] = z_shape
 Spots['y_shape'] = y_shape
 Spots['x_shape'] = x_shape
-Spots = Spots.drop(columns='fish_shape')
+Spots = Spots.drop(columns='fish_reodered_shape')
 
 clusters_len = len(Clusters)
-Clusters = pd.merge(
-    Clusters,
-    Detection.loc[:,['detection_id','acquisition_id']],
-    on= 'detection_id',
-    how='inner'
-)
-assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Detection merge."
+if 'acquisition_id' not in Clusters.columns :
+    Clusters = pd.merge(
+        Clusters,
+        Detection.loc[:,['detection_id','acquisition_id']],
+        on= 'detection_id',
+        how='inner'
+    )
+    assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Detection merge."
+
 Clusters = pd.merge(
     Clusters,
     Drift.loc[Drift['drift_type'] == 'fish'].loc[:,['acquisition_id', 'drift_z','drift_y','drift_x']],
@@ -65,25 +68,27 @@ assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Drift 
 
 Clusters = pd.merge(
     Clusters,
-    Acquisition.loc[:,['acquisition_id', 'fish_shape']],
+    Acquisition.loc[:,['acquisition_id', 'fish_reodered_shape']],
     on= 'acquisition_id',
     how='inner'
 )
 assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(clusters_len,len(Spots))
-z_shape,y_shape,x_shape,_ = zip(*list(Clusters['fish_shape']))
-Clusters['z_shape'] = z_shape
-Clusters['y_shape'] = y_shape
-Clusters['x_shape'] = x_shape
-Clusters = Clusters.drop(columns='fish_shape')
+if len(Clusters) > 0 :
+    z_shape,y_shape,x_shape,_ = zip(*list(Clusters['fish_reodered_shape']))
+    Clusters['z_shape'] = z_shape
+    Clusters['y_shape'] = y_shape
+    Clusters['x_shape'] = x_shape
+if 'fish_reodered_shape' in Clusters.columns : Clusters = Clusters.drop(columns='fish_reodered_shape')
 
 # Matching location with Drift
 Drift_len = len(Drift)
-Drift = pd.merge(
-    Drift,
-    Acquisition.loc[:,['acquisition_id', 'location']],
-    on= 'acquisition_id',
-    how= 'inner'
-)
+if not 'location' in Drift.columns :
+    Drift = pd.merge(
+        Drift,
+        Acquisition.loc[:,['acquisition_id', 'location']],
+        on= 'acquisition_id',
+        how= 'inner'
+    )
 assert len(Drift) == Drift_len, "Duplicate or deletion during Drift/Acquisition merge."
 
 #Matching location with Detection
@@ -100,7 +105,6 @@ assert len(Detection) == Detection_len, "Duplicate or deletion during Detection/
 Spots = Spots.rename(columns={'z' : 'drifted_z', 'y' : 'drifted_y', 'x' : 'drifted_x'}) #Keeping old values
 for dim_index, i in enumerate(['z','y','x']) : 
     Spots[i] = (Spots['drifted_{0}'.format(i)] + Spots['drift_{0}'.format(i)]).astype(int)
-    assert all(Spots['drifted_{0}'.format(i)] < Spots['{0}_shape'.format(i)])
     drop_index = Spots[Spots[i] >= Spots['{0}_shape'.format(i)]].index
     Spots = Spots.drop(drop_index)
     print("drift pushed {0} spots out of range".format(len(drop_index)))
@@ -108,7 +112,6 @@ for dim_index, i in enumerate(['z','y','x']) :
 Clusters = Clusters.rename(columns={'z' : 'drifted_z', 'y' : 'drifted_y', 'x' : 'drifted_x'}) #Keeping old values
 for dim_index, i in enumerate(['z','y','x']) : 
     Clusters[i] = (Clusters['drifted_{0}'.format(i)] + Clusters['drift_{0}'.format(i)]).astype(int)
-    assert all(Clusters['drifted_{0}'.format(i)] < Clusters['{0}_shape'.format(i)])
     drop_index = Clusters[Clusters[i] >= Clusters['{0}_shape'.format(i)]].index
     print("drift pushed {0} clusters out of range".format(len(drop_index)))
     Clusters = Clusters.drop(drop_index)

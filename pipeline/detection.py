@@ -18,7 +18,7 @@ from tqdm import tqdm
 #########
 
 from Sequential_Fish.pipeline_parameters import detection_MAX_WORKERS as MAX_WORKERS
-from Sequential_Fish.pipeline_parameters import RUN_PATH, VOXEL_SIZE, SPOT_SIZE, ALPHA, BETA, GAMMA, CLUSTER_SIZE, MIN_SPOT_PER_CLUSTER, ARTIFACT_RADIUS
+from Sequential_Fish.pipeline_parameters import RUN_PATH, VOXEL_SIZE, SPOT_SIZE, ALPHA, BETA, GAMMA, CLUSTER_SIZE, MIN_SPOT_PER_CLUSTER, ARTIFACT_RADIUS, DETECTION_SLICE_TO_REMOVE
 
 # Main Script
 
@@ -53,6 +53,11 @@ for location_id, location in enumerate(Acquisition['location'].unique()) :
     image_map = image_map.iat[0]    
     multichannel_stack = open_image(image_path)# This open 4D multichannel image (all the images are loaded in one call)
     multichannel_stack = reorder_image_stack(multichannel_stack, image_map)
+    
+    #Removing Z slices (USER SETTING)
+    if type(DETECTION_SLICE_TO_REMOVE[1]) != type(None) : DETECTION_SLICE_TO_REMOVE[1] = -DETECTION_SLICE_TO_REMOVE[1]
+    multichannel_stack = multichannel_stack[:,DETECTION_SLICE_TO_REMOVE[0]:DETECTION_SLICE_TO_REMOVE[1]]
+    
     multichannel_stack = multichannel_stack[...,:-1]
     images_list = [np.moveaxis(channel,[3,0,1,2],[0,1,2,3]) for channel in multichannel_stack]
     images_list = [

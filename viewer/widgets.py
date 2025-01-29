@@ -14,6 +14,7 @@ from magicgui import widgets
 
 from .utils import open_image, open_segmentation
 from .utils import pad_to_shape
+from .utils import reorder_image_stack
 
 from pbwrap.preprocessing.alignement import shift_array
 from ..analysis import multichannel_clustering, spot_count_map
@@ -436,26 +437,37 @@ class load_fish :
                     max_shape = np.max(shapes, axis=0)
             else :
                 max_shape = sub_Acqu['fish_shape'].iat[0]
-            max_shape = max_shape[:-1] #Ignoring channel dimension for padding
 
 
             image_list = []
             for index in tqdm(sub_Acqu.index, desc="Opening fish signal ({0})".format(target)) :
                 fullpath = sub_Acqu.at[index, "full_path"]
                 shape = sub_Acqu.at[index, 'fish_shape']
-                image_number = shape[0] * shape[-1]
-
+                image_map = sub_Acqu.at[index, 'fish_map']
+                z = image_map['z']
+                y = image_map['y']
+                x = image_map['x']
+                c = image_map['c']
+                cycles = image_map['cycles']
+                image_number = shape[z] * shape[c]
+                print("shape : ", shape)
+                print('czyx : ', c,z,y,x)
+                print("image_number : ", image_number)
                 image = open_image(fullpath, image_number= image_number)
-                new_shape = (shape[0], shape[-1]) + tuple(image.shape[1:])
+                new_shape = (shape[z], shape[c]) + (shape[y], shape[x])
+                new_shape = new_shape[:cycles] + (1,) + new_shape[cycles:]
                 image = image.reshape(*new_shape)
-                image = image[:,color_id,...]
+                image = reorder_image_stack(image, image_map)[0]
+                image = image[...,color_id]
                 if drift_correction :
                     drift = list(sub_Acqu.loc[index, ['drift_z','drift_y','drift_x']].astype(int))
                     image = shift_array(image, *drift)
 
-
-                if (image.shape != max_shape).any() :
-                    image = pad_to_shape(image, new_shape=max_shape)
+                max_shape_no_channel = max_shape[:c] + max_shape[(c+1):]
+                print(max_shape_no_channel)
+                print(max_shape)
+                if (image.shape != max_shape_no_channel) :
+                    image = pad_to_shape(image, new_shape=max_shape_no_channel)
 
                 image_list.append(image)
             array = np.stack(image_list)
@@ -541,12 +553,14 @@ class load_dapi :
             for index in tqdm(self.data.index, desc= "opening {0}".format(radio_button)) :
                 full_path = self.data.at[index, "dapi_full_path"]
                 shape = self.data.at[index, 'dapi_shape']
+                image_map = self.data.at[index, 'dapi_map']
                 image_number = shape[0] * shape[1]
                 
                 image = open_image(full_path, image_number=image_number)
                 new_shape = (shape[0], shape[1]) + tuple(image.shape[1:])
                 image = image.reshape(*new_shape)
-                image = image[:,channel_indexer,...]
+                image = reorder_image_stack(image, map=image_map)
+                image = image[:,:,:,channel_indexer]
 
                 if drift_correction :
                     drift = list(self.data.loc[index, ['drift_z','drift_y','drift_x']].astype(int))
@@ -632,6 +646,7 @@ class load_beads :
             target = self.target[target_index]
             gene_data = self.Gene_map_filtered.loc[self.Gene_map_filtered['cycle'] == target].iloc[0]
             shape = self.data[self.data['cycle'] == target].iloc[0]['fish_shape']
+            image_map = self.data[self.data['cycle'] == target].iloc[0]['fish_map']
             cycle = gene_data['cycle']
 
             if target == 0 :
@@ -663,7 +678,8 @@ class load_beads :
                 image = open_image(full_path, image_number=image_number)
                 new_shape = (shape[0], shape[-1]) + tuple(image.shape[1:])
                 image = image.reshape(*new_shape)
-                image = image[:,-1,...]
+                image = reorder_image_stack(image, image_map)
+                image = image[...,-1]
                 
                 if drift_correction :
                     drift = list(sub_Acqu.loc[index, ['drift_z','drift_y','drift_x']].astype(int))

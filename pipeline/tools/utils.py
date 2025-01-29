@@ -64,6 +64,9 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
 
 
 def reorder_image_stack(image, map) :
+    """
+    will order image to cycles-zyxc
+    """
     
     dim = image.ndim
     if dim == 5 :
@@ -77,6 +80,9 @@ def reorder_image_stack(image, map) :
 
     image = np.moveaxis(image, new_order, ref_order)
     return image
+
+# def reorder_shape_tuple(shape, map) :
+
 
 def open_image(path:str, map=None) :
     """
