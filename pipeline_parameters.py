@@ -4,7 +4,7 @@
 
 ################
 
-RUN_PATH = "/media/floricslimani/SSD4To/SSD_floricslimani/Fish_seq/Davide/2024-09-03 - SeqFISH_Run8 - HeLa_POLR2" #fullpath to main folder given by experimentalist
+RUN_PATH = "/media/floricslimani/SSD4To/SSD_floricslimani/Fish_seq/Davide/2024-08-12 - SeqFISH - HeLa - Puro - R2TP1-2_Run7" #fullpath to main folder given by experimentalist
 VOXEL_SIZE = (200,97,97) # size of a pixel in nanometer (z,y,x)
 WASHOUT_KEY_WORD = 'Washout' #key for washout in gene map excel
 HAS_BEAD_CHANNEL = True
@@ -16,7 +16,7 @@ HAS_BEAD_CHANNEL = True
 ################
 MAP_FILENAME = "HeLa-POLR2_Run8.xlsx"  #filename of required map file giving cycles names
 CYCLE_KEY = "Cycle n."
-GENES_NAMES_KEY = ["Gene1 (Ch1 - Cy3 - CAM_1)"] # Ordered by channel
+GENES_NAMES_KEY = ["Gene1 (Ch1 - Cy5)","Gene2 (Ch2 - Cy3)"] # Ordered by channel
 
 
 cycle_regex = "img(\d+)_000_000000_0000000000.ome.tif" #regex to catch cycle number from tif filename.
