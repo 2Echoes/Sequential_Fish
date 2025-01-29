@@ -14,7 +14,7 @@ HAS_BEAD_CHANNEL = True
 # 1. Input
 
 ################
-MAP_FILENAME = "HeLa-POLR2_Run8.xlsx"  #filename of required map file giving cycles names
+MAP_FILENAME = "HeLa-R2TP_Run7.xlsx"  #filename of required map file giving cycles names
 CYCLE_KEY = "Cycle n."
 GENES_NAMES_KEY = ["Gene1 (Ch1 - Cy5)","Gene2 (Ch2 - Cy3)"] # Ordered by channel
 
