@@ -43,7 +43,7 @@ for location in tqdm(Acquisition['location'].unique()) :
     nucleus_image = open_image(nucleus_path)
     nucleus_image = reorder_image_stack(nucleus_image, nucleus_map)
     assert nucleus_image.ndim == 4, nucleus_image.shape
-    nucleus_image = nucleus_image[:,:,:,-1]
+    nucleus_image = nucleus_image[:,:,:,0]
     nucleus_image_save = nucleus_image.copy()
     nucleus_image = np.mean(nucleus_image, axis=0)
     nucleus_label = segm.Nucleus_segmentation(
