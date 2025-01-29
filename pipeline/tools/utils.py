@@ -24,7 +24,11 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
     try :
         c_idx = shape.index(color_number + bead_channel)
     except ValueError :
-        raise MappingError("{0} colors channels are expected from experimental file but no matching axis was found in shape {1}.".format(color_number, shape))
+        if bead_channel :
+            error = "{0} colors channels (+1 for beads) are expected from experimental file but no matching axis was found in shape {1}.".format(color_number, shape)
+        else :
+            error = "{0} colors channels are expected from experimental file but no matching axis was found in shape {1}.".format(color_number, shape)
+        raise MappingError(error)
     else :
         map_['c'] = c_idx
         reducing_list[c_idx] = -1

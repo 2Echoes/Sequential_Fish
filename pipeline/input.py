@@ -57,7 +57,7 @@ for location_index, location in enumerate(location_list) :
     assert os.path.isfile(dapi_full_path)
     dapi_im = open_image(dapi_full_path)
     dapi_shape = dapi_im.shape
-    dapi_map = auto_map_channels(dapi_im, color_number=color_number, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
+    dapi_map = auto_map_channels(dapi_im, color_number=1, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
     dapi_reodered_shape = reorder_image_stack(dapi_im, dapi_map).shape
 
     #Setting dapi informations
