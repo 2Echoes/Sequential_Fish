@@ -235,12 +235,6 @@ Colocalisation_save['detection_id1'] = Colocalisation_save['detection_id1'].asty
 Colocalisation_save['detection_id2'] = Colocalisation_save['detection_id2'].astype(int)
 coloc_len = len(Colocalisation_save)
 Colocalisation_merged = Colocalisation_save.rename(columns={"object1" : "detection_id1", "object2" : "detection_id2"})
-Colocalisation_merged = pd.merge(
-    Colocalisation_save,
-    Cell_merged.loc[:,['label','detection_id','cell_id','rna_number']], #cell_id reference here
-    right_on= ['label','detection_id'],
-    left_on= ['label','detection_id1'],
-).rename(columns={'rna_number' : 'spot1_total_number'})
 
 Colocalisation_merged:pd.DataFrame = pd.merge(
     Colocalisation_merged,
