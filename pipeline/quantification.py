@@ -27,22 +27,24 @@ if 'acquisition_id' not in Spots.columns :
         how='inner'
     )
     assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Detection merge."
-Spots = pd.merge(
-    Spots,
-    Drift.loc[Drift['drift_type'] == 'fish'].loc[:,['acquisition_id', 'drift_z','drift_y','drift_x']],
-    on= 'acquisition_id',
-    how='inner'
-)
-print(Spots.columns)
-assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(spots_len,len(Spots))
+if 'drift_z' not in Spots.columns :
+    Spots = pd.merge(
+        Spots,
+        Drift.loc[Drift['drift_type'] == 'fish'].loc[:,['acquisition_id', 'drift_z','drift_y','drift_x']],
+        on= 'acquisition_id',
+        how='inner'
+    )
+    print(Spots.columns)
+    assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(spots_len,len(Spots))
 
-Spots = pd.merge(
-    Spots,
-    Acquisition.loc[:,['acquisition_id', 'fish_reodered_shape']],
-    on= 'acquisition_id',
-    how='inner'
-)
-assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(spots_len,len(Spots))
+if 'fish_reodered_shape' not in Spots.columns :
+    Spots = pd.merge(
+        Spots,
+        Acquisition.loc[:,['acquisition_id', 'fish_reodered_shape']],
+        on= 'acquisition_id',
+        how='inner'
+    )
+    assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(spots_len,len(Spots))
 z_shape,y_shape,x_shape,_ = zip(*list(Spots['fish_reodered_shape']))
 Spots['z_shape'] = z_shape
 Spots['y_shape'] = y_shape
@@ -59,21 +61,23 @@ if 'acquisition_id' not in Clusters.columns :
     )
     assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Detection merge."
 
-Clusters = pd.merge(
-    Clusters,
-    Drift.loc[Drift['drift_type'] == 'fish'].loc[:,['acquisition_id', 'drift_z','drift_y','drift_x']],
-    on= 'acquisition_id',
-    how='inner'
-)
-assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(clusters_len,len(Clusters))
+if 'drift_z' not in Clusters.columns :
+    Clusters = pd.merge(
+        Clusters,
+        Drift.loc[Drift['drift_type'] == 'fish'].loc[:,['acquisition_id', 'drift_z','drift_y','drift_x']],
+        on= 'acquisition_id',
+        how='inner'
+    )
+    assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(clusters_len,len(Clusters))
 
-Clusters = pd.merge(
-    Clusters,
-    Acquisition.loc[:,['acquisition_id', 'fish_reodered_shape']],
-    on= 'acquisition_id',
-    how='inner'
-)
-assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(clusters_len,len(Spots))
+if 'fish_reodered_shape' not in Clusters.columns :
+    Clusters = pd.merge(
+        Clusters,
+        Acquisition.loc[:,['acquisition_id', 'fish_reodered_shape']],
+        on= 'acquisition_id',
+        how='inner'
+    )
+    assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(clusters_len,len(Spots))
 if len(Clusters) > 0 :
     z_shape,y_shape,x_shape,_ = zip(*list(Clusters['fish_reodered_shape']))
     Clusters['z_shape'] = z_shape
