@@ -97,13 +97,14 @@ assert len(Drift) == Drift_len, "Duplicate or deletion during Drift/Acquisition 
 
 #Matching location with Detection
 Detection_len = len(Detection)
-Detection = pd.merge(
-    Detection,
-    Acquisition.loc[:,['acquisition_id', 'location']],
-    on= 'acquisition_id',
-    how= 'inner'
-)
-assert len(Detection) == Detection_len, "Duplicate or deletion during Detection/Acquisition merge."
+if 'location' not in Detection.columns :
+    Detection = pd.merge(
+        Detection,
+        Acquisition.loc[:,['acquisition_id', 'location']],
+        on= 'acquisition_id',
+        how= 'inner'
+    )
+    assert len(Detection) == Detection_len, "Duplicate or deletion during Detection/Acquisition merge."
 
 #Applying drift correction
 for key in ['drifted_z', 'drifted_y', 'drifted_x'] :
