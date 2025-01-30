@@ -33,6 +33,7 @@ Spots = pd.merge(
     on= 'acquisition_id',
     how='inner'
 )
+print(Spots.columns)
 assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(spots_len,len(Spots))
 
 Spots = pd.merge(
