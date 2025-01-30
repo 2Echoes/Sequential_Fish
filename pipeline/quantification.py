@@ -106,10 +106,11 @@ Detection = pd.merge(
 assert len(Detection) == Detection_len, "Duplicate or deletion during Detection/Acquisition merge."
 
 #Applying drift correction
+for key in ['drifted_z', 'drifted_y', 'drifted_x'] :
+    if key in Spots.columns : Spots = Spots.drop(columns=key)
+    if key in Clusters.columns : Clusters = Clusters.drop(columns=key)
 Spots = Spots.rename(columns={'z' : 'drifted_z', 'y' : 'drifted_y', 'x' : 'drifted_x'}) #Keeping old values
-for dim_index, i in enumerate(['z','y','x']) : 
-    print(Spots['drifted_{0}'.format(i)])
-    print(Spots['drift_{0}'.format(i)])
+for dim_index, i in enumerate(['z','y','x']) :
     Spots[i] = (Spots['drifted_{0}'.format(i)] + Spots['drift_{0}'.format(i)]).astype(int)
     drop_index = Spots[Spots[i] >= Spots['{0}_shape'.format(i)]].index
     Spots = Spots.drop(drop_index)
