@@ -34,7 +34,6 @@ if 'drift_z' not in Spots.columns :
         on= 'acquisition_id',
         how='inner'
     )
-    print(Spots.columns)
     assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(spots_len,len(Spots))
 
 if 'fish_reodered_shape' not in Spots.columns :
@@ -109,6 +108,8 @@ assert len(Detection) == Detection_len, "Duplicate or deletion during Detection/
 #Applying drift correction
 Spots = Spots.rename(columns={'z' : 'drifted_z', 'y' : 'drifted_y', 'x' : 'drifted_x'}) #Keeping old values
 for dim_index, i in enumerate(['z','y','x']) : 
+    print(Spots['drifted_{0}'.format(i)])
+    print(Spots['drift_{0}'.format(i)])
     Spots[i] = (Spots['drifted_{0}'.format(i)] + Spots['drift_{0}'.format(i)]).astype(int)
     drop_index = Spots[Spots[i] >= Spots['{0}_shape'.format(i)]].index
     Spots = Spots.drop(drop_index)
