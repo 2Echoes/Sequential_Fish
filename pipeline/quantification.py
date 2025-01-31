@@ -248,6 +248,13 @@ Colocalisation_merged:pd.DataFrame = pd.merge(
     Colocalisation_merged,
     Cell_merged.loc[:,['label','detection_id','rna_number']],
     right_on= ['label','detection_id'],
+    left_on= ['label','detection_id1'],
+).rename(columns={'rna_number' : 'spot1_total_number'})
+
+Colocalisation_merged:pd.DataFrame = pd.merge(
+    Colocalisation_merged,
+    Cell_merged.loc[:,['label','detection_id','rna_number']],
+    right_on= ['label','detection_id'],
     left_on= ['label','detection_id2'],
 ).rename(columns={'rna_number' : 'spot2_total_number'})
 
