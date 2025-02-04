@@ -1,7 +1,6 @@
 import sys
 from Sequential_Fish import viewer, pipeline
 
-
 def main():
 
     MODULES = ['viewer', 'pipeline']

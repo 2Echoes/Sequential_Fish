@@ -59,7 +59,7 @@ def reorder_image_stack(image, map) :
     """
     will order image to cycles-zyxc
     """
-    
+
     dim = image.ndim
     if dim == 5 :
         new_order = (map['cycles'], map['z'], map['y'], map['x'], map['c'])
@@ -72,3 +72,19 @@ def reorder_image_stack(image, map) :
 
     image = np.moveaxis(image, new_order, ref_order)
     return image
+
+def correct_map(map:dict) : 
+    """
+    Maps needs to be corrected when used on image where cycles axis has been removed.
+    """
+
+    cycles_axis = map['cycles']
+    for key, value in map.items() :
+        if value < cycles_axis :
+            pass
+        else :
+            map[key] = value - 1
+    
+    map.pop('cycles')
+
+    return map

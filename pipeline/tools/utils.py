@@ -13,7 +13,7 @@ class MappingError(Exception) :
 
 def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, bead_channel = True) :
     """
-    Assume x and y are the biggest dimension.
+    Assume z is the smallest dimension
     """
 
     dim = image.ndim
@@ -31,7 +31,7 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
         raise MappingError(error)
     else :
         map_['c'] = c_idx
-        reducing_list[c_idx] = -1
+        reducing_list[c_idx] = max(reducing_list) + 1
 
     if dim > 4 : #Else dapi is being mapped and has only one cycle.
         try :
@@ -40,29 +40,18 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
             raise MappingError("{0} cycles are expected from experimental file but no matching axis was found in shape {1}.".format(cycle_number, shape))
         else :
             map_['cycles'] = cycles_idx
-            reducing_list[cycles_idx] = -1
+            reducing_list[cycles_idx] = max(reducing_list) + 1
 
-    #Set the biggest dimension to y
-    y_val = max(reducing_list)
-    y_idx = shape.index(y_val)
-    map_['y'] = y_idx
-
-    #2nd biggest set to x
-    reducing_list[y_idx] = -1
-    x_val = max(reducing_list)
-    x_idx = reducing_list.index(x_val)
-    reducing_list[y_idx] = y_val
-
-    map_['x'] = x_idx
-    reducing_list.remove(y_val)
-    reducing_list.remove(x_val)
-    reducing_list.remove(-1)
-    if dim > 4 : reducing_list.remove(-1)
-
-    #Remaning value set to z
-    z_val = reducing_list[0]
+    #Set the smallest dimension to z
+    z_val = min(reducing_list)
     z_idx = shape.index(z_val)
     map_['z'] = z_idx
+
+    for index, value in enumerate(reducing_list) :
+        if index in map_.values() : continue
+        else : 
+            if not 'y' in map_.keys() : map_['y'] = index
+            else : map_['x'] = index
 
     return map_
 
