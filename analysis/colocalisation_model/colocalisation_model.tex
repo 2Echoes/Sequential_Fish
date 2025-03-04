@@ -328,11 +328,7 @@ or for $J$ not fixed:
 
 
 \subsubsection{Voxel occupancy by a pair (i,j)-Standard deviation}
-For this calculus we have to consider again the variance of the voxel occupancy of the $J$ distribution in case it is not fixed. To do so we use again
-the total variance formula in its generalistic form:
-\[
-    Var(N^{(i,j)}_{up}) = E[Var(N^{(i,j)}_{up}|J)] + Var(E[N^{(i,j)}_{up}|J])
-\]
+
 \textbf{Notes \& notations:}
 \begin{itemize}
     \item Let $p_i = (1-{(1-\frac{1}{v})}^{k_i})$, the probability that voxel $m$ is occupied with at least one molecule $i$.
@@ -342,6 +338,11 @@ the total variance formula in its generalistic form:
     \item The probability that $i$ and $j$ are in voxel $m$ and $l$ can be written $P((X^i_m \cap X^j_m) \cap (X^i_l \cap X^j_l)) = q_iq_j$ since $I$ and $J$ are independent.
 \end{itemize}
 
+For this calculus we have to consider again the variance of the voxel occupancy of the $J$ distribution in case it is not fixed. To do so we use again
+the total variance formula in its generalistic form:
+\[
+    Var(N^{(i,j)}_{up}) = E[Var(N^{(i,j)}_{up}|J)] + Var(E[N^{(i,j)}_{up}|J])
+\]
 To make this less dense, let us break this in a few terms.\newline
 The simplest term is obtained from \textbf{(9)}:
 \[
@@ -475,31 +476,6 @@ and the standard deviation is
 = \sqrt{Var(N_c)} 
 = \sqrt{\,v\,p_c(1-p_c) + v(v-1)\bigl(q_c - p_c^2\bigr)\,}.
 \]
-
-
-\newpage
-\subsection{Generalisation to n distributions}
-
-Let us consider n distributions: $i_1, i_2, \ldots, i_n$. What is the probality that any combination of single molecule $c$ to be found in an unique position $m$?
-Under the assomption of randomess, any distribution $i$ is independent from other distributions, thus the probability to find $i_1$ and $i_2$ at any given
-location is the product of the probabilities of distributions to localize at this location.
-
-\[
-p(c) = \prod_{i \in c}p(i)
-\]
-with 
-\begin{equation}
-\hspace{2cm} p(i) = 1-{(1-\frac{1}{v})}^{k_i} \hspace{2cm} \textbf{(i)}
-\end{equation}
-
-Again to know how many different positions contains a combination of single molecule $c$, we define the observation variable $I$.
-\[
-\forall m \in V, I_c(m) = \begin{cases}
-    0 \text{ if } X^c_m = 0 \\
-    1 \text{ if } X^c_m \geq 1
-\end{cases}
-\]
-
 
 
 \begin{figure}[h]
