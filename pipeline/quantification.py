@@ -17,73 +17,6 @@ Spots = pd.read_feather(RUN_PATH + '/result_tables/Spots.feather')
 Clusters = pd.read_feather(RUN_PATH + '/result_tables/Clusters.feather')
 Detection = pd.read_feather(RUN_PATH + '/result_tables/Detection.feather')
 
-#Matching Drift with Spots
-spots_len = len(Spots)
-if 'acquisition_id' not in Spots.columns :
-    Spots = pd.merge(
-        Spots,
-        Detection.loc[:,['detection_id','acquisition_id']],
-        on= 'detection_id',
-        how='inner'
-    )
-    assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Detection merge."
-if 'drift_z' not in Spots.columns :
-    Spots = pd.merge(
-        Spots,
-        Drift.loc[Drift['drift_type'] == 'fish'].loc[:,['acquisition_id', 'drift_z','drift_y','drift_x']],
-        on= 'acquisition_id',
-        how='inner'
-    )
-    assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(spots_len,len(Spots))
-
-if 'fish_reodered_shape' not in Spots.columns :
-    Spots = pd.merge(
-        Spots,
-        Acquisition.loc[:,['acquisition_id', 'fish_reodered_shape']],
-        on= 'acquisition_id',
-        how='inner'
-    )
-    assert len(Spots) == spots_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(spots_len,len(Spots))
-z_shape,y_shape,x_shape,_ = zip(*list(Spots['fish_reodered_shape']))
-Spots['z_shape'] = z_shape
-Spots['y_shape'] = y_shape
-Spots['x_shape'] = x_shape
-Spots = Spots.drop(columns='fish_reodered_shape')
-
-clusters_len = len(Clusters)
-if 'acquisition_id' not in Clusters.columns :
-    Clusters = pd.merge(
-        Clusters,
-        Detection.loc[:,['detection_id','acquisition_id']],
-        on= 'detection_id',
-        how='inner'
-    )
-    assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Detection merge."
-
-if 'drift_z' not in Clusters.columns :
-    Clusters = pd.merge(
-        Clusters,
-        Drift.loc[Drift['drift_type'] == 'fish'].loc[:,['acquisition_id', 'drift_z','drift_y','drift_x']],
-        on= 'acquisition_id',
-        how='inner'
-    )
-    assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(clusters_len,len(Clusters))
-
-if 'fish_reodered_shape' not in Clusters.columns :
-    Clusters = pd.merge(
-        Clusters,
-        Acquisition.loc[:,['acquisition_id', 'fish_reodered_shape']],
-        on= 'acquisition_id',
-        how='inner'
-    )
-    assert len(Clusters) == clusters_len, "Duplicate or deletion during Spots/Drift merge, before : {0}, after : {1}".format(clusters_len,len(Spots))
-if len(Clusters) > 0 :
-    z_shape,y_shape,x_shape,_ = zip(*list(Clusters['fish_reodered_shape']))
-    Clusters['z_shape'] = z_shape
-    Clusters['y_shape'] = y_shape
-    Clusters['x_shape'] = x_shape
-if 'fish_reodered_shape' in Clusters.columns : Clusters = Clusters.drop(columns='fish_reodered_shape')
-
 # Matching location with Drift
 Drift_len = len(Drift)
 if not 'location' in Drift.columns :
@@ -106,27 +39,6 @@ if 'location' not in Detection.columns :
     )
     assert len(Detection) == Detection_len, "Duplicate or deletion during Detection/Acquisition merge."
 
-#Applying drift correction
-for key in ['drifted_z', 'drifted_y', 'drifted_x'] :
-    if key in Spots.columns : Spots = Spots.drop(columns=key)
-    if key in Clusters.columns : Clusters = Clusters.drop(columns=key)
-Spots = Spots.rename(columns={'z' : 'drifted_z', 'y' : 'drifted_y', 'x' : 'drifted_x'}) #Keeping old values
-for dim_index, i in enumerate(['z','y','x']) :
-    Spots[i] = (Spots['drifted_{0}'.format(i)] + Spots['drift_{0}'.format(i)]).astype(int)
-    drop_index = Spots[Spots[i] >= Spots['{0}_shape'.format(i)]].index
-    Spots = Spots.drop(drop_index)
-    print("drift pushed {0} spots out of range".format(len(drop_index)))
-
-Clusters = Clusters.rename(columns={'z' : 'drifted_z', 'y' : 'drifted_y', 'x' : 'drifted_x'}) #Keeping old values
-for dim_index, i in enumerate(['z','y','x']) : 
-    Clusters[i] = (Clusters['drifted_{0}'.format(i)] + Clusters['drift_{0}'.format(i)]).astype(int)
-    drop_index = Clusters[Clusters[i] >= Clusters['{0}_shape'.format(i)]].index
-    print("drift pushed {0} clusters out of range".format(len(drop_index)))
-    Clusters = Clusters.drop(drop_index)
-
-
-#Correct abberation for spots
-#TODO
 
 Cell_save = pd.DataFrame()
 Colocalisation_save =pd.DataFrame()
@@ -270,10 +182,8 @@ Colocalisation_merged['sub_fraction'] = Colocalisation_merged['count'] / Colocal
 
 #Save tables
 Colocalisation_merged = Colocalisation_merged.reset_index(drop=True).reset_index(drop=False, names='colocalisation_id')
-Cell_merged = Cell_merged.reset_index(drop=True).reset_index(drop=False, names='colocalisation_id')
+Cell_merged = Cell_merged.reset_index(drop=True).reset_index(drop=False, names='quantification_id')
 Colocalisation_merged.to_feather(RUN_PATH + "/result_tables/Colocalisation.feather")
 Cell_merged.to_feather(RUN_PATH + "/result_tables/Cell.feather")
-Spots.reset_index(drop=True).to_feather(RUN_PATH + "/result_tables/Spots.feather")
-Clusters.reset_index(drop=True).to_feather(RUN_PATH + "/result_tables/Clusters.feather")
 Drift.reset_index(drop=True).to_feather(RUN_PATH + "/result_tables/Drift.feather")
 Detection.reset_index(drop=True).to_feather(RUN_PATH + "/result_tables/Detection.feather")

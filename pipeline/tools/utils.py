@@ -1,8 +1,11 @@
+import pandas as pd
 import numpy as np
 import datetime as dt
 import re
 from czifile import imread as _imread
 from bigfish.stack import read_image as _read_image
+
+import warnings
 
 
 class MappingError(Exception) :
@@ -115,3 +118,54 @@ def _find_one_or_NaN(path, regex) :
         raise AssertionError("Unexpected element in Acquisition['full_path'] : {0}".format(path))
     
     return res
+
+
+def safe_merge_no_duplicates(
+        left : pd.DataFrame,
+        right : pd.DataFrame,
+        keys : 'list[str]',
+        on : str = None,
+        left_on : str = None,
+        right_on : str = None
+) :
+    """
+    Always perform left merge, aimed for 1:1 or m:1 merges. (error if duplicating or removing lines).
+    Sole purpose is to safely add columns from right to left.
+    """
+
+    if type(keys) == str : keys  = [keys]
+
+    if type(on) != type(None) :
+        if type(on) == str : loc = [on]
+        elif isinstance(on, (list,tuple)) : loc = on
+        else : raise TypeError(f"Wrong type for 'on' parameter : {type(on)}")
+    elif type(right_on) != type(None) : 
+        if type(right_on) == str : loc = [right_on]
+        elif isinstance(right_on, (list,tuple)) : loc = right_on
+        else : raise TypeError(f"Wrong type for 'on' parameter : {type(right_on)}")
+    else :
+        raise ValueError("'on' parameter must be passed or couple ('left_on','right_on')")
+
+    keys_to_merge = []
+    for key in keys :
+        if key not in left.columns : 
+            keys_to_merge.append(key)
+        else :
+            warnings.warn(f"{key} already in left dataframe columns, {key} was removed from columns to merge.")
+
+    if len(keys_to_merge) == 0 : 
+        warnings.warn("No column to merge.")
+        return left
+    
+    check_len = len(left)
+    left = pd.merge(
+        left,
+        right.loc[:,loc + keys_to_merge],
+        on=on,
+        left_on=left_on,
+        right_on=right_on,
+    )
+
+    if len(left) != check_len : raise ValueError(f"Lines were duplicated or removed during safe merge.\nPrevious count {check_len}; count after merge : {len(left)}")
+
+    return left

@@ -9,7 +9,7 @@ import pbwrap.preprocessing.alignement as prepro
 from Sequential_Fish.pipeline.tools import open_image, reorder_image_stack
 from tqdm import tqdm
 
-from Sequential_Fish.pipeline_parameters import RUN_PATH, FISH_PENALTY, DAPI_PENALTY, DRIFT_SLICE_TO_REMOVE, VOXEL_SIZE, BEAD_SIZE
+from Sequential_Fish.pipeline_parameters import RUN_PATH, DRIFT_SLICE_TO_REMOVE, VOXEL_SIZE, BEAD_SIZE, DO_HIGHPASS_FILTER
 
 SAVE_PATH = RUN_PATH + '/visuals/'
 Drift_columns = [
@@ -18,27 +18,20 @@ Drift_columns = [
     'drift_z',
     'drift_y',
     'drift_x',
-    'ref_bead_threshold',
-    'drift_bead_threshold',
-    'ref_bead_number',
-    'drift_bead_number',
-    'found_symetric_drift',
     'voxel_size',
     'bead_size',
+    'removed_slices',
+    'highpass_filter',
+    'max_projection',
+
 ]
 Drift_save = pd.DataFrame(columns=Drift_columns)
-Drift_save['found_symetric_drift'] = Drift_save['found_symetric_drift'].astype(bool)
+Drift_save['max_projection'] = Drift_save['max_projection'].astype(bool)
+Drift_save['highpass_filter'] = Drift_save['highpass_filter'].astype(bool)
 
 ### MAIN ###
 
 Acquisition = pd.read_feather(RUN_PATH + "/result_tables/Acquisition.feather")
-
-
-
-reference_threshold_penalty = 1
-drift_treshold_penalty = 1
-
-bug = 0
 
 for location in Acquisition['location'].unique() : 
     
@@ -91,13 +84,11 @@ for location in Acquisition['location'].unique() :
     stack_index = 0
 
     #dapi drift
-    print(fish_reference_image.shape, dapi_image.shape)
     if fish_reference_image.shape != dapi_image.shape :
         matching_shape = tuple(
             np.min([fish_reference_image.shape, dapi_image.shape], axis=0)
             )
     else : matching_shape = fish_reference_image.shape
-    print('matching shape : ', matching_shape)
     indexer = tuple([slice(axis) for axis in matching_shape])
     dapi_results = prepro.fft_phase_correlation_drift(
         fish_reference_image[indexer],
@@ -118,16 +109,28 @@ for location in Acquisition['location'].unique() :
     for acquisition_id in tqdm(sub_acq[sub_acq['cycle'] != 0]['acquisition_id']) : #is ordered by cycle which is image stack ordered.
         stack_index +=1
         drifted_fish = fish_image_stack[stack_index]
+        
+        max_proj = False
         fish_result = prepro.fft_phase_correlation_drift(
             reference_image= fish_reference_image,
-            drifted_image=drifted_fish,
+            drifted_image= drifted_fish,
             bead_size=BEAD_SIZE,
             voxel_size=VOXEL_SIZE,
         )
 
+        if (fish_result['drift_z'], fish_result['drift_y'], fish_result['drift_x'],) == (0,0,0) :
+            max_proj = True
+            fish_result = prepro.fft_phase_correlation_drift(
+                reference_image= np.max(fish_reference_image,axis=0),
+                drifted_image= np.max(drifted_fish, axis=0),
+                bead_size=BEAD_SIZE,
+                voxel_size=VOXEL_SIZE,
+            )
+
         fish_result = pd.DataFrame(fish_result)
         fish_result['acquisition_id'] = acquisition_id
         fish_result['drift_type'] = 'fish'
+        fish_result['max_projection'] = max_proj
 
         Drift = pd.concat([
             Drift,
@@ -143,6 +146,7 @@ for location in Acquisition['location'].unique() :
 print("All locations computed. Saving results...")
 Drift_save['voxel_size'] = [VOXEL_SIZE] * len(Drift_save)
 Drift_save['bead_size'] = [BEAD_SIZE] * len(Drift_save)
+Drift_save['highpass_filter'] = [DO_HIGHPASS_FILTER] * len(Drift_save)
 Drift_save = Drift_save.reset_index(drop=True).reset_index(drop=False, names= 'drift_id')
 Drift_save.to_feather(RUN_PATH + '/result_tables/Drift.feather')
 Drift_save.to_excel(RUN_PATH + '/result_tables/Drift.xlsx')

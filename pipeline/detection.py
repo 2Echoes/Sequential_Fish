@@ -147,6 +147,11 @@ for location_id, location in enumerate(Acquisition['location'].unique()) :
         ))
     Spots, Clusters = build_Spots_and_Cluster_df(detection_result)
 
+    #Correct coordinates for removed slices
+    if type(DETECTION_SLICE_TO_REMOVE[0]) != type(None) :
+        Spots['z'] = Spots['z'] + DETECTION_SLICE_TO_REMOVE[0]
+        Clusters['z'] = Clusters['z'] + DETECTION_SLICE_TO_REMOVE[0]
+
     #Saving detection field view
     print("Saving field of views as compressed arrays.")
     save_dict = {

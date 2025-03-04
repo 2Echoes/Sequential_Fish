@@ -15,6 +15,7 @@ from magicgui import widgets
 from .utils import open_image, open_segmentation
 from .utils import pad_to_shape
 from .utils import reorder_image_stack
+from .utils import reshape_stack
 from .utils import correct_map
 
 from pbwrap.preprocessing.alignement import shift_array
@@ -158,8 +159,9 @@ class load_spots :
             color_table,
             ):
         
+
         self.Spots = table_dict['Spots']
-        self.Detection = table_dict['Detection'].loc[:,['detection_id','color_id']]
+        self.Detection = table_dict['Detection'].loc[:,['detection_id','color_id', 'acquisition_id']]
         self.Acquisition = table_dict['Acquisition'].loc[:,['acquisition_id','cycle','location']]
         self.Gene_map = table_dict['Gene_map'].loc[:,['cycle','color_id','target']]
         
@@ -178,6 +180,7 @@ class load_spots :
             on= 'detection_id',
             validate='m:1',
         )
+
 
         data = pd.merge(
             data,
@@ -215,13 +218,13 @@ class load_spots :
             
             if drift_correction : 
                 name = "{1}_{0}_spots_corrected".format(target, population)
-                symbol = 'x'
+                symbol = 'disc'
                 z_indexer = 'z'
                 y_indexer = 'y'
                 x_indexer = 'x'
             else :
                 name = "{1}_{0}_spots_drifted".format(target, population)
-                symbol = 'disc'
+                symbol = 'x'
                 z_indexer = 'drifted_z'
                 y_indexer = 'drifted_y'
                 x_indexer = 'drifted_x'
@@ -277,7 +280,7 @@ class load_clusters :
             ):
         
         self.Clusters = table_dict['Clusters']
-        self.Detection = table_dict['Detection'].loc[:,['detection_id','color_id']]
+        self.Detection = table_dict['Detection'].loc[:,['detection_id','color_id', 'acquisition_id']]
         self.Acquisition = table_dict['Acquisition'].loc[:,['acquisition_id','cycle','location']]
         self.Gene_map = table_dict['Gene_map'].loc[:,['cycle','color_id','target']]
 
@@ -443,18 +446,16 @@ class load_fish :
             for index in tqdm(sub_Acqu.index, desc="Opening fish signal ({0})".format(target)) :
                 fullpath = sub_Acqu.at[index, "full_path"]
                 shape = sub_Acqu.at[index, 'fish_shape']
-                print(f"fish_shape : {shape}")
                 image_map = sub_Acqu.at[index, 'fish_map'].copy()
                 image_map = correct_map(map=image_map)
                 z = image_map['z']
-                y = image_map['y']
-                x = image_map['x']
                 c = image_map['c']
                 image_number = shape[z] * shape[c]
+                
                 image = open_image(fullpath, image_number= image_number)
-                image = image.reshape(*shape)
-                image = reorder_image_stack(image, image_map)
+                image = reshape_stack(image, image_map=image_map, im_shape=shape)
                 image = image[...,color_id]
+                
                 if drift_correction :
                     drift = list(sub_Acqu.loc[index, ['drift_z','drift_y','drift_x']].astype(int))
                     image = shift_array(image, *drift)
@@ -523,7 +524,7 @@ class load_dapi :
                     },
                 auto_call=False
                 )
-        def load_fish(radio_button, drift_correction) -> LayerDataTuple:
+        def load_dapi(radio_button, drift_correction) -> LayerDataTuple:
 
             if radio_button == "signal" :
                 channel_indexer = 0
@@ -551,9 +552,8 @@ class load_dapi :
                 image_number = shape[0] * shape[1]
                 
                 image = open_image(full_path, image_number=image_number)
-                new_shape = (shape[0], shape[1]) + tuple(image.shape[1:])
-                image = image.reshape(*new_shape)
-                image = reorder_image_stack(image, map=image_map)
+                image = image.reshape(*shape)
+                image = reorder_image_stack(image, image_map)
                 image = image[:,:,:,channel_indexer]
 
                 if drift_correction :
@@ -576,7 +576,7 @@ class load_dapi :
 
             return layerdata
 
-        return load_fish
+        return load_dapi
     
 class load_beads :
     def __init__(
@@ -658,7 +658,6 @@ class load_beads :
 
             sub_Acqu = self.data.loc[self.data['cycle'] == cycle]
 
-            print(image_map)
             z = image_map['z']
             c = image_map['c']
             image_number = shape[z] * shape[c]
@@ -675,14 +674,9 @@ class load_beads :
                 full_path = sub_Acqu.at[index, "full_path"]
 
                 image = open_image(full_path, image_number=image_number)
-                print(f"reshaped to {shape}")
-                image = image.reshape(shape[0],shape[2],shape[1],shape[3])
-                # max_shape = (max_shape[0],max_shape[2],max_shape[1])
-                # image = image.reshape(*shape)
-                image = reorder_image_stack(image, image_map)
-                print(f"image.shape : {image.shape}")
+                image = reshape_stack(image, image_map=image_map, im_shape= shape)
                 image = image[...,-1]
-                print(f"image.shape : {image.shape}")
+                
                 
                 if drift_correction :
                     drift = list(sub_Acqu.loc[index, ['drift_z','drift_y','drift_x']].astype(int))
@@ -690,8 +684,6 @@ class load_beads :
                     image = shift_array(image, *drift)
                 
                 if (image.shape != max_shape) :
-                    print(f"current shape : {image.shape}")
-                    print(f"new shape : {max_shape}")
                     image = pad_to_shape(image, new_shape=max_shape)
 
 

@@ -88,3 +88,36 @@ def correct_map(map:dict) :
     map.pop('cycles')
 
     return map
+
+def reshape_stack(stack : np.ndarray, image_map : dict, im_shape : tuple) :
+    """
+    Reshape and reorder image stack safely.
+    """
+    
+    map_ = image_map.copy()
+
+    if map_['c'] == 1 : #Nothing to do
+        
+        stack = stack.reshape(*im_shape)
+        stack = reorder_image_stack(stack, map_)
+        return stack
+    
+    #.reshape method has to be called with z,c,y,x order independently of order that was yield in input pipeline.
+    else :
+        target_shape = (im_shape[map_['z']],
+                        im_shape[map_['c']],
+                        im_shape[map_['y']],
+                        im_shape[map_['x']]
+                        )
+
+        stack = stack.reshape(*target_shape)
+
+    # now we want to reoder to usual zyxc
+    for key in ['z','y','x'] :
+        if map_[key] < map_['c'] and  map_[key] >= 1:
+            map_[key] +=1
+
+    map_['c'] = 1
+    stack = reorder_image_stack(stack, map_)
+
+    return stack

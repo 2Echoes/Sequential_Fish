@@ -5,6 +5,10 @@ from datetime import datetime
 
 """
 Main script to launch pipeline
+
+Script are listed in `scripts_rounds` in corresponding order.  
+All scripts of a round are launched even if an error is returned within the round but next round will be launched only if all previous scripts were sucessful.
+
 """
 script_folder = os.path.abspath(__file__)
 script_folder = os.path.dirname(script_folder)
@@ -12,6 +16,8 @@ script_folder = os.path.dirname(script_folder)
 scripts_rounds = {
     'input' : ['input.py'],
     'analysis' : ['detection.py', 'segmentation.py', 'drift.py'],
+    'alignement' : ['alignement.py'],
+    'filtering' : ['washout.py'],
     'quantification' : ['quantification.py']
 }
 
@@ -52,8 +58,6 @@ def launch_script(script_name):
         logging.error(f"script failed {script_name}:\n{e.stderr}")
 
         return False
-
-### Main
 
 def main():
     start_time = datetime.now()
