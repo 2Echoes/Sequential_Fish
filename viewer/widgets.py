@@ -161,8 +161,8 @@ class load_spots :
         
 
         self.Spots = table_dict['Spots']
-        self.Detection = table_dict['Detection'].loc[:,['detection_id','color_id', 'acquisition_id']]
-        self.Acquisition = table_dict['Acquisition'].loc[:,['acquisition_id','cycle','location']]
+        self.Detection = table_dict['Detection'].loc[:,['detection_id']]
+        self.Acquisition = table_dict['Acquisition'].loc[:,['acquisition_id','location']]
         self.Gene_map = table_dict['Gene_map'].loc[:,['cycle','color_id','target']]
         
         self.update(list(self.Acquisition['location'].unique()))
@@ -180,7 +180,6 @@ class load_spots :
             on= 'detection_id',
             validate='m:1',
         )
-
 
         data = pd.merge(
             data,
@@ -258,7 +257,8 @@ class load_spots :
 
             layerdata = (spots_array, 
                          {
-                             "scale" : self.voxel_size, 
+                             "scale" : self.voxel_size,
+                             "size" : 0.1, 
                              "name" : name, 
                              'ndim' : 4, 
                              'face_color' : '#0000' ,
@@ -280,7 +280,7 @@ class load_clusters :
             ):
         
         self.Clusters = table_dict['Clusters']
-        self.Detection = table_dict['Detection'].loc[:,['detection_id','color_id', 'acquisition_id']]
+        self.Detection = table_dict['Detection'].loc[:,['detection_id','color_id']]
         self.Acquisition = table_dict['Acquisition'].loc[:,['acquisition_id','cycle','location']]
         self.Gene_map = table_dict['Gene_map'].loc[:,['cycle','color_id','target']]
 
@@ -370,12 +370,12 @@ class load_clusters :
 
                 spots_array = np.concatenate([spots_array, spots])
             layerdata = (spots_array, 
-                         {"scale" : self.voxel_size, 
+                         {"scale" : self.voxel_size,
+                          "size" : 0.2, 
                           "name" : name, 
                           'ndim' : 4, 
                           'face_color' : color,
                           'symbol' : symbol, 
-                          'size' : 15, 
                           'blending' : 'additive'}
                           , 'Points')
             return layerdata
@@ -467,10 +467,15 @@ class load_fish :
                 image_list.append(image)
             array = np.stack(image_list)
 
+            print(f"SCALE FOR FISH : {self.voxel_size}")
 
             layerdata = (
                 array,
-                {"scale" : self.voxel_size, "name" : name, 'blending' : 'additive', 'colormap' : color},
+                {
+                    "scale" : self.voxel_size, 
+                    "name" : name, 
+                    'blending' : 'additive', 
+                    'colormap' : color},
                 'Image'
             )
 
@@ -865,7 +870,7 @@ class multichannel_cluster :
                           'face_color' : 'white',
                           'symbol' : 'square',
                           'features' : {'single_number' : single_number, 'target_names' : target_names}, 
-                          'size' : 25, 
+                          'size' : 0.1, 
                           'blending' : 'additive'}
                           , 'Points')
             return layer_data

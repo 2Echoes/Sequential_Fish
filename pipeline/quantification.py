@@ -17,6 +17,10 @@ Spots = pd.read_feather(RUN_PATH + '/result_tables/Spots.feather')
 Clusters = pd.read_feather(RUN_PATH + '/result_tables/Clusters.feather')
 Detection = pd.read_feather(RUN_PATH + '/result_tables/Detection.feather')
 
+# Filtering washout Spots and clusters
+Spots = Spots.loc[Spots['is_washout'] == False]
+Clusters = Clusters.loc[Spots['is_washout'] == False]
+
 # Matching location with Drift
 Drift_len = len(Drift)
 if not 'location' in Drift.columns :
@@ -44,6 +48,8 @@ Cell_save = pd.DataFrame()
 Colocalisation_save =pd.DataFrame()
 for location in Acquisition['location'].unique() :
     print("Starting {0}".format(location))
+
+    #Opening segmentation
     segmentation_results = np.load(RUN_PATH + '/segmentation/{0}_segmentation.npz'.format(location))
     cytoplasm_label = segmentation_results['cytoplasm']
     nucleus_label = segmentation_results['nucleus']

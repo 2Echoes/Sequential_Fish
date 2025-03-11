@@ -6,7 +6,7 @@ import os
 import pandas as pd
 import numpy as np
 import pbwrap.preprocessing.alignement as prepro
-from Sequential_Fish.pipeline.tools import open_image, reorder_image_stack
+from Sequential_Fish.tools import open_image, reorder_image_stack
 from tqdm import tqdm
 
 from Sequential_Fish.pipeline_parameters import RUN_PATH, DRIFT_SLICE_TO_REMOVE, VOXEL_SIZE, BEAD_SIZE, DO_HIGHPASS_FILTER

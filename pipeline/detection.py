@@ -8,7 +8,7 @@ This script use results from FishSeq_pipeline_segmentation.py that must be run b
 import os
 import numpy as np
 import pandas as pd
-from Sequential_Fish.pipeline.tools import open_image, reorder_image_stack
+from Sequential_Fish.tools import open_image, reorder_image_stack
 from concurrent.futures import ThreadPoolExecutor
 from pbwrap.detection.multithread import multi_thread_full_detection, build_Spots_and_Cluster_df
 from tqdm import tqdm

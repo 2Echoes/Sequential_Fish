@@ -3,9 +3,9 @@ This script aims at reading the input folder and preparing data folders and loca
 """
 
 from Sequential_Fish.pipeline_parameters import RUN_PATH, FOLDER_KEYS, MAP_FILENAME, cycle_regex, CYCLE_KEY, GENES_NAMES_KEY, WASHOUT_KEY_WORD, HAS_BEAD_CHANNEL
-from Sequential_Fish.pipeline.tools.utils import open_image, auto_map_channels, _find_one_or_NaN, reorder_image_stack
+from Sequential_Fish.tools.utils import open_image, auto_map_channels, _find_one_or_NaN, reorder_image_stack
 
-import Sequential_Fish.pipeline.tools._folder_integrity as prepro
+import Sequential_Fish.tools._folder_integrity as prepro
 import pandas as pd
 import os
 import warnings as warn

@@ -2,7 +2,7 @@
 This script aims at correcting drift computed in Drift.py for spots and clusters saving both corrected coordinates and detected coordinates.
 """
 import pandas as pd
-from Sequential_Fish.pipeline.tools import safe_merge_no_duplicates
+from Sequential_Fish.tools import safe_merge_no_duplicates
 
 from Sequential_Fish.pipeline_parameters import RUN_PATH 
 
@@ -14,8 +14,8 @@ Detection = pd.read_feather(RUN_PATH + '/result_tables/Detection.feather')
 
 ### Adding columns to Spots & Clusters
 Spots = safe_merge_no_duplicates(Spots, Detection, 'acquisition_id', on = 'detection_id')
-Spots = safe_merge_no_duplicates(Spots, Drift.loc[Drift['drift_type'] == 'fish'], 'acquisition_id', on = ['drift_z','drift_y','drift_x'])
-Spots = safe_merge_no_duplicates(Spots, Acquisition, 'acquisition_id', on = 'fish_reodered_shape')
+Spots = safe_merge_no_duplicates(Spots, Drift.loc[Drift['drift_type'] == 'fish'], keys= ['drift_z','drift_y','drift_x'], on = 'acquisition_id')
+Spots = safe_merge_no_duplicates(Spots, Acquisition, keys='fish_reodered_shape', on = 'acquisition_id')
 
 z_shape,y_shape,x_shape,_ = zip(*list(Spots['fish_reodered_shape']))
 Spots['z_shape'] = z_shape
@@ -24,8 +24,8 @@ Spots['x_shape'] = x_shape
 Spots = Spots.drop(columns='fish_reodered_shape')
 
 Clusters = safe_merge_no_duplicates(Clusters, Detection, 'acquisition_id', on = 'detection_id')
-Clusters = safe_merge_no_duplicates(Clusters, Drift.loc[Drift['drift_type'] == 'fish'], 'acquisition_id', on = ['drift_z','drift_y','drift_x'])
-Clusters = safe_merge_no_duplicates(Clusters, Acquisition, 'acquisition_id', on = 'fish_reodered_shape')
+Clusters = safe_merge_no_duplicates(Clusters, Drift.loc[Drift['drift_type'] == 'fish'], keys=['drift_z','drift_y','drift_x'], on = 'acquisition_id')
+Clusters = safe_merge_no_duplicates(Clusters, Acquisition, 'fish_reodered_shape', on = 'acquisition_id')
 
 if len(Clusters) > 0 :
     z_shape,y_shape,x_shape,_ = zip(*list(Clusters['fish_reodered_shape']))

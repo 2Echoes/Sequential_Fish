@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 
 from Sequential_Fish.pipeline_parameters import RUN_PATH, WASHOUT_KEY_WORD
-from Sequential_Fish.pipeline.tools import safe_merge_no_duplicates
+from Sequential_Fish.tools import safe_merge_no_duplicates
 
 
 Acquisition = pd.read_feather(RUN_PATH + '/result_tables/Acquisition.feather')
@@ -49,6 +49,10 @@ cycle_list.sort()
 banned_coordinates = []
 for cycle in cycle_list :
 
+    print(f"\nStarting cycle {cycle}")
+    print(f"Currently {len(banned_coordinates)} coordinates are banned.")
+
+
     new_washout_idx = Spots.loc[
         (Spots['coordinates'].isin(banned_coordinates)) & (Spots['cycle'] == cycle)
         ].index
@@ -62,5 +66,27 @@ for cycle in cycle_list :
     )
 
     #Updating banned coordinates
+    ban_len = len(banned_coordinates)
     banned_coordinates += new_banned_coordinates
     banned_coordinates = list(pd.unique(banned_coordinates))
+    print(f"{len(banned_coordinates) - ban_len} coordinates were added to ban list.")
+
+#Merging with clusters and propagating washout
+Spots_groupby_cluster = Spots.groupby('cluster_id')['is_washout'].max().reset_index(drop=False)
+
+Clusters = safe_merge_no_duplicates(
+    Clusters,
+    Spots_groupby_cluster,
+    keys='is_washout',
+    on='cluster_id'
+)
+
+Spots.loc[Spots['cluster_id'].isin(Clusters[Clusters['is_washout'] == True])]['is_washout'] = True
+print(Spots)
+
+
+print("\nSaving results...")
+
+Spots.reset_index(drop=True).to_feather(RUN_PATH + "/result_tables/Spots.feather")
+Clusters.reset_index(drop=True).to_feather(RUN_PATH + "/result_tables/Clusters.feather")
+print("Done")
