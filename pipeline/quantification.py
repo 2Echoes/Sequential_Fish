@@ -45,7 +45,6 @@ if 'location' not in Detection.columns :
 
 
 Cell_save = pd.DataFrame()
-Colocalisation_save =pd.DataFrame()
 for location in Acquisition['location'].unique() :
     print("Starting {0}".format(location))
 
@@ -113,32 +112,11 @@ for location in Acquisition['location'].unique() :
     Cell = pd.concat(cell_quantification_result, axis=0) 
     Cell['location'] = location
 
-
-    #Compute colocalisation
-    Colocalisation = FishSeq.compute_colocalisation(
-        Spots=Spots,
-        detection_id_list=selected_detection_id,
-        population=COLOC_POPULATION,
-        voxel_size=VOXEL_SIZE,
-        coloc_distance=COLOC_DISTANCE,
-        cell_label=cytoplasm_label,
-        location=location,
-        z_shape=Spots['z'].max(),
-        max_workers=MAX_WORKERS,
-    )
-
-
     ## End of loop
     Cell_save = pd.concat([
         Cell_save,
         Cell
     ],axis=0)
-
-    Colocalisation_save = pd.concat([
-        Colocalisation_save,
-        Colocalisation
-    ],axis=0)
-    ####
 
 #Building cell_id (not unique identifier bc Cell actually has one line per detection)
 cell_IDs = Cell_save.groupby(['location','label'])['detection_id'].first().reset_index(drop=False).reset_index(drop=False, names='cell_id')
@@ -153,43 +131,11 @@ if len(Cell_merged) != cell_len :
     Cell_save.reset_index(drop=True).to_feather(RUN_PATH = "/result_tables/Cell_before_merge.feather")
 else :
     del Cell_save
-
-
-#Building reference between Colocalisation and Cell tables and transmiting total rna number to all coloc lines
 Cell['detection_id'] = Cell['detection_id'].astype(int)
-Colocalisation_save['detection_id1'] = Colocalisation_save['detection_id1'].astype(int)
-Colocalisation_save['detection_id2'] = Colocalisation_save['detection_id2'].astype(int)
-coloc_len = len(Colocalisation_save)
-Colocalisation_merged = Colocalisation_save.rename(columns={"object1" : "detection_id1", "object2" : "detection_id2"})
 
-Colocalisation_merged:pd.DataFrame = pd.merge(
-    Colocalisation_merged,
-    Cell_merged.loc[:,['label','detection_id','rna_number']],
-    right_on= ['label','detection_id'],
-    left_on= ['label','detection_id1'],
-).rename(columns={'rna_number' : 'spot1_total_number'})
-
-Colocalisation_merged:pd.DataFrame = pd.merge(
-    Colocalisation_merged,
-    Cell_merged.loc[:,['label','detection_id','rna_number']],
-    right_on= ['label','detection_id'],
-    left_on= ['label','detection_id2'],
-).rename(columns={'rna_number' : 'spot2_total_number'})
-
-if len(Colocalisation_merged) != coloc_len : 
-    print("\033[33mWARNING : Colocalisation line conservation failed during merge. Saving a copy of the table before merge.\nbefore : {0} ; after : {1}\033[00m".format(coloc_len, len(Colocalisation_merged)))
-    Colocalisation_save.reset_index(drop=True).to_feather(RUN_PATH + "/result_tables/Coloc_before_merge.feather")
-else :
-    del Colocalisation_save
-
-#Compute colocalisation fraction
-Colocalisation_merged['fraction'] = Colocalisation_merged['count'] / Colocalisation_merged['spot1_total_number']
-Colocalisation_merged['sub_fraction'] = Colocalisation_merged['count'] / Colocalisation_merged['spot1_number'] #sub fraction = fraction when population is all or when all spots are belongs to one population
 
 #Save tables
-Colocalisation_merged = Colocalisation_merged.reset_index(drop=True).reset_index(drop=False, names='colocalisation_id')
 Cell_merged = Cell_merged.reset_index(drop=True).reset_index(drop=False, names='quantification_id')
-Colocalisation_merged.to_feather(RUN_PATH + "/result_tables/Colocalisation.feather")
 Cell_merged.to_feather(RUN_PATH + "/result_tables/Cell.feather")
 Drift.reset_index(drop=True).to_feather(RUN_PATH + "/result_tables/Drift.feather")
 Detection.reset_index(drop=True).to_feather(RUN_PATH + "/result_tables/Detection.feather")
