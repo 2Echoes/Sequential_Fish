@@ -23,6 +23,9 @@ def _get_defined_variable(script) :
     return variables
 
 def create_run_dataframe() :
+    """
+    Create empty dataframe with correct columns and dtypes.
+    """
     run_dataframe = pd.DataFrame(columns=COLUMNS)
     run_parameters = _get_defined_variable(parameters)
 
@@ -60,8 +63,9 @@ def check_run_dataframe(run_dataframe: pd.DataFrame) :
 
 def add_new_run(run_dataframe : pd.DataFrame) :
     """
-    Create a new line for Run dataframe. Check before in 'RUN_PATH' is already in df bc it will erase it.
+    Create a new line for Run dataframe. Check before in 'RUN_PATH' is already in df because it will erase it.
     """
+    
     version = __version__
     date = get_datetime()
     run_parameters = _get_defined_variable(parameters)

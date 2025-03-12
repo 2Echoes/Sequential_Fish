@@ -3,6 +3,9 @@ import logging
 import os
 from datetime import datetime
 
+from Sequential_Fish.pipeline_parameters import RUN_PATH
+from Sequential_Fish.run_saves import validate_script, fail_script
+
 """
 Main script to launch pipeline
 
@@ -21,7 +24,6 @@ scripts_rounds = {
     'quantification' : ['quantification.py']
 }
 
-from Sequential_Fish.pipeline_parameters import RUN_PATH
 
 log_file = RUN_PATH + "/run_log.log"
 logging.basicConfig(
@@ -45,19 +47,24 @@ def launch_script(script_name):
         script_end = datetime.now()
         run_duration = (script_end - script_start).total_seconds()
         
-        logging.info("script duration : {0}".format(run_duration))
-        logging.info(f"script succeed {script_name}:\n{result.stdout}")
-
-        return True
 
     except subprocess.CalledProcessError as e:
         script_end = datetime.now()
         run_duration = (script_end - script_start).total_seconds()
 
+        fail_script(RUN_PATH, script=script_name)
         logging.info("script duration : {0}".format(run_duration))
         logging.error(f"script failed {script_name}:\n{e.stderr}")
 
         return False
+    
+    else :
+        validate_script(RUN_PATH, script=script_name)
+        
+        logging.info("script duration : {0}".format(run_duration))
+        logging.info(f"script succeed {script_name}:\n{result.stdout}")
+
+        return True
 
 def main():
     start_time = datetime.now()

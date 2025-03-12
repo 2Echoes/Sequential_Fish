@@ -1,13 +1,12 @@
 import sys
 import os
 import pandas as pd
+from Sequential_Fish import __run_cache_path__ as run_cache_path
 from Sequential_Fish import viewer, pipeline
 from Sequential_Fish.pipeline.runner import launch_script, script_folder
 from Sequential_Fish.run_saves import create_run_dataframe, check_run_dataframe
 from Sequential_Fish._pipeline_scripts import PIPELINE_SCRIPTS
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-run_cache_path = os.path.join(script_dir, "run_saves", "Run_cache.feather")
 
 
 def main():
@@ -17,12 +16,12 @@ def main():
     #RUN CACHE
     if not os.path.isfile(run_cache_path) :
         print(f"Creating run_cache at {run_cache_path}")
-        Runs = create_run_dataframe()
-        Runs.reset_index(drop=True).to_feather(run_cache_path)
+        run_dataframe = create_run_dataframe()
+        run_dataframe.reset_index(drop=True).to_feather(run_cache_path)
     else :
-        Runs = pd.read_feather(run_cache_path)
-        Runs = check_run_dataframe(Runs)
-        Runs.reset_index(drop=True).to_feather(run_cache_path)
+        run_dataframe = pd.read_feather(run_cache_path)
+        run_dataframe = check_run_dataframe(run_dataframe)
+        run_dataframe.reset_index(drop=True).to_feather(run_cache_path)
     
     #CALL TO MODULES
     if len(sys.argv) < 2:
