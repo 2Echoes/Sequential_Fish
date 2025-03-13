@@ -1,17 +1,19 @@
 import sys
 import os
 import pandas as pd
+
 from Sequential_Fish import __run_cache_path__ as run_cache_path
-from Sequential_Fish import viewer, pipeline
+from Sequential_Fish import viewer, pipeline, analysis
 from Sequential_Fish.pipeline.runner import launch_script, script_folder
-from Sequential_Fish.run_saves import create_run_dataframe, check_run_dataframe
+from Sequential_Fish.run_saves import create_run_dataframe, check_run_dataframe, check_run
 from Sequential_Fish._pipeline_scripts import PIPELINE_SCRIPTS
+from Sequential_Fish.pipeline_parameters import RUN_PATH
 
 
 
 def main():
 
-    MODULES = ['viewer', 'pipeline']
+    MODULES = ['viewer', 'pipeline', 'analysis']
 
     #RUN CACHE
     if not os.path.isfile(run_cache_path) :
@@ -40,6 +42,9 @@ def main():
         viewer.run()
         
     elif module == "pipeline":
+        
+        check_run(RUN_PATH)
+        
         if len(submodules) == 0 :
             pipeline.run()
         else :
@@ -49,6 +54,21 @@ def main():
                 for script in submodules : 
                     if not script.endswith('.py') : script += ".py"
                     launch_script(script_folder + '/' + script)
+    
+    elif module == "analysis" :
+        
+        print(f"Data set selected : {RUN_PATH}")
+        
+        if len(submodules) == 0 : 
+            submodules = ['all']
+            print("Starting all analysis modules")
+        else :
+            print("Starting selected analysis modules")
+            
+        analysis.run(*submodules)
+        
+        print("Done.")
+    
     else:
         print(f"Unknown module: {module}")
         print("Available modules: {0}".format(MODULES))

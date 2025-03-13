@@ -8,3 +8,4 @@ from .dataframe import add_new_run
 
 from .update import validate_script
 from .update import fail_script
+from .update import check_run
