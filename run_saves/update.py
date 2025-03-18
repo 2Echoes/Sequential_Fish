@@ -4,6 +4,8 @@ from Sequential_Fish import __run_cache_path__
 from ..tools import get_datetime
 from .dataframe import add_new_run
 
+from .._pipeline_scripts import PIPELINE_SCRIPTS
+
 
 def validate_script(RUN_PATH, script: str) :
     """
@@ -47,3 +49,10 @@ def check_run(RUN_PATH) :
         print(f"Initiating new RUN : {RUN_PATH}")
         run_dataframe = add_new_run(run_dataframe)
         run_dataframe.reset_index(drop=True).to_feather(__run_cache_path__)
+        
+def run_status() :
+    run_dataframe = pd.read_feather(__run_cache_path__)
+    print(run_dataframe.loc[:,['run_id', 'RUN_PATH',] + PIPELINE_SCRIPTS])
+    
+def get_run_cache() :
+    return pd.read_feather(__run_cache_path__)

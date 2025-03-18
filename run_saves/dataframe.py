@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 import Sequential_Fish.pipeline_parameters as parameters
 from Sequential_Fish.tools import get_datetime
 from Sequential_Fish import __version__
@@ -71,9 +72,11 @@ def add_new_run(run_dataframe : pd.DataFrame) :
     run_parameters = _get_defined_variable(parameters)
 
     RUN_PATH = run_parameters['RUN_PATH']
-    if RUN_PATH in run_parameters['RUN_PATH'] :
+    if RUN_PATH in run_dataframe['RUN_PATH'] :
         drop_idx = run_dataframe[run_dataframe['RUN_PATH'] == RUN_PATH].index
         run_dataframe = run_dataframe.drop(drop_idx, axis=0)
+    if RUN_PATH.endswith('/') : RUN_PATH = RUN_PATH[:-1]
+    run_name = os.path.basename(RUN_PATH)
 
     if run_dataframe['run_id'].empty :
         new_run_id = 0
@@ -82,6 +85,7 @@ def add_new_run(run_dataframe : pd.DataFrame) :
     
     new_run = pd.DataFrame({
         'run_id' : [new_run_id],
+        'run_name' : [run_name],
         'creation_date' : [date],
         'last_modification_date' : [date],
         'pipeline_version' : [version]

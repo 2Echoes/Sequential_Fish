@@ -1,6 +1,7 @@
 
 import napari
 import pandas as pd
+import os
 
 from numpy.random import shuffle
 from .widgets import fish_container
@@ -11,28 +12,31 @@ from .widgets import locations_container
 from .widgets import analysis_container
 from magicgui import widgets as wi
 
+from .input import select_path
+
 from pbwrap.plot.utils import get_colors_list, _get_blue_colors, _get_green_colors, _get_orange_colors, _get_red_colors, _get_yellow_colors, _get_pink_colors, _get_purple_colors
 
 
-from ..pipeline_parameters import RUN_PATH
 VOXEL_SIZE = (200,97,97)
 
 
 def main() :
     
+    run_path = select_path()
+    
     TABLES = ['Acquisition', 'Detection', 'Spots', 'Clusters', 'Drift', 'Cell', 'Colocalisation', 'Gene_map']
     tables_dict = {
-        table : pd.read_feather(RUN_PATH + '/result_tables/' + table + '.feather')  for table in TABLES
+        table : pd.read_feather(run_path + '/result_tables/' + table + '.feather')  for table in TABLES
     }
 
     #Init viewer
-    Viewer = napari.Viewer()
+    Viewer = napari.Viewer(title=os.path.basename(run_path))
     color_table = create_color_table(tables_dict)
 
     #Loading panel
     fish_buttons, fish_widgets = fish_container(VOXEL_SIZE, tables_dict, color_table)
     dapi_buttons, dapi_widgets = dapi_container(VOXEL_SIZE, tables_dict)
-    segmentation_buttons, segmentation_widget = segmentation_container(RUN_PATH, tables_dict, VOXEL_SIZE)
+    segmentation_buttons, segmentation_widget = segmentation_container(run_path, tables_dict, VOXEL_SIZE)
     detection_buttons, detection_widgets = detection_container(VOXEL_SIZE, tables_dict, color_table=color_table)
     
     load_data_tab = wi.Container(widgets=[fish_buttons, dapi_buttons, segmentation_buttons, detection_buttons], labels=False, layout='vertical', name= 'Load data')
