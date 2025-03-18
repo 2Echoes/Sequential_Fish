@@ -5,7 +5,7 @@ import pandas as pd
 from Sequential_Fish import __run_cache_path__ as run_cache_path
 from Sequential_Fish import viewer, pipeline, analysis
 from Sequential_Fish.pipeline.runner import launch_script, script_folder
-from Sequential_Fish.run_saves import create_run_dataframe, check_run_dataframe, check_run
+from Sequential_Fish.run_saves import create_run_dataframe, check_run_dataframe, check_run, run_status
 from Sequential_Fish._pipeline_scripts import PIPELINE_SCRIPTS
 from Sequential_Fish.pipeline_parameters import RUN_PATH
 
@@ -13,7 +13,7 @@ from Sequential_Fish.pipeline_parameters import RUN_PATH
 
 def main():
 
-    MODULES = ['viewer', 'pipeline', 'analysis']
+    MODULES = ['viewer', 'pipeline', 'analysis', 'status']
 
     #RUN CACHE
     if not os.path.isfile(run_cache_path) :
@@ -68,6 +68,9 @@ def main():
         analysis.run(*submodules)
         
         print("Done.")
+    
+    elif module == "status" :
+        run_status()
     
     else:
         print(f"Unknown module: {module}")

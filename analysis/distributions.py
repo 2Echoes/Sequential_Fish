@@ -4,8 +4,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from .utils import distribution_super_plot
+from .post_processing import RNA_filtering
 from ..tools import safe_merge_no_duplicates
-from ..pipeline_parameters import RUN_PATH
+from .analysis_parameters import RUN_PATH
 
 def merge_data(
     Acquisition : pd.DataFrame,
@@ -79,6 +80,7 @@ def distributions_analysis(
             Gene_map=Gene_map
         )
         Cell = Cell.loc[~Cell['target'].str.contains('Washout')]
+        Cell = RNA_filtering(Cell)
 
         for measure in disibutions_measures :
         

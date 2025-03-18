@@ -21,7 +21,7 @@ def _get_voxel_size(Detection : pd.DataFrame) :
 
 
 
-def distribution_super_plot(data, ax, title=None, xlabel=None, ylabel=None, showextrema=False) :
+def distribution_super_plot(data, ax, title=None, xlabel=None, ylabel=None, showextrema=False, **kwargs) :
     """
     Distribution plot for pd.Series data.
     Series is expected to have a multi-index from 1 to 3 dimensions and Series values are expected to be lists.
@@ -35,13 +35,13 @@ def distribution_super_plot(data, ax, title=None, xlabel=None, ylabel=None, show
     level = len(data.index.names)
 
     if level == 1 :
-        ax, legend = _distribution_lvl1(data, ax, showextrema=showextrema)
+        ax, legend = _distribution_lvl1(data, ax, showextrema=showextrema, **kwargs)
     
     elif level == 2 :
-        ax, legend = _distribution_lvl2(data, ax, showextrema=showextrema)
+        ax, legend = _distribution_lvl2(data, ax, showextrema=showextrema, **kwargs)
 
     elif level == 3 :
-        ax, legend = _distribution_lvl3(data, ax, showextrema=showextrema)
+        ax, legend = _distribution_lvl3(data, ax, showextrema=showextrema, **kwargs)
     
     else : raise LevelError("Unsupported number of dimension in index (should be between 1 and 3).")
     
@@ -61,7 +61,7 @@ def distribution_super_plot(data, ax, title=None, xlabel=None, ylabel=None, show
 class LevelError(IndexError) :
     pass
 
-def _distribution_lvl1(data: pd.Series, ax: plt.Axes, showextrema=False) :
+def _distribution_lvl1(data: pd.Series, ax: plt.Axes, showextrema=False, **kwargs) :
 
     multi_index = data.index.names
     if len(multi_index) != 1 : raise LevelError("_distribution_lvl1 was called but multi-index dimension does not match.")
@@ -87,22 +87,36 @@ def _distribution_lvl1(data: pd.Series, ax: plt.Axes, showextrema=False) :
 
     return ax, legend_prep
 
-def _distribution_lvl2(data: pd.Series, ax : plt.Axes, alpha= 0.6, showextrema=False, show_distribution_size=True) :
+def _distribution_lvl2(data: pd.Series, ax : plt.Axes, alpha= 0.6, showextrema=False, show_distribution_size=True, **kwargs) :
+
+    # print(data)
+
+    # if kwargs.get('sort') :
+    if 'sort_parameters' in kwargs.keys() : sort_parameters = kwargs['sort_parameters']
+    else : sort_parameters = {}
+    #     data = data.sort_index(**sort_parameters)
+    # print(data)
     
+    data = data.sort_index(**sort_parameters)
     multi_index = data.index.names
+    
     if len(multi_index) != 2 : raise LevelError("_distribution_lvl2 was called but multi-index dimension does not match.")
-    data = data.sort_index()
+    
     measure = data.name
-    distributions: pd.Series = data.reset_index(drop=False).groupby(multi_index[:1])[measure].apply(list)
+    distributions: pd.Series = data.reset_index(drop=False).groupby(multi_index[:1], sort=False)[measure].agg(list)
+    
     labels_lvl2 = list(distributions.index)
     if show_distribution_size :
         for index, label in enumerate(labels_lvl2) : 
             labels_lvl2[index] = label + '\n' + str([len(dis) for dis in distributions.iat[index]])
     labels_lvl1 = list(data.index.get_level_values(1).unique())
+    
+    custom_colors = kwargs.get('colors')
+    colors_df = make_color_frame(labels= labels_lvl1, custom_colors=custom_colors)
 
-    colors_df = make_color_frame(labels= labels_lvl1)
-
-    colors = list(pd.merge(data.reset_index(), colors_df, left_on= multi_index[1], right_on='labels').sort_values(multi_index)['colors'])
+    if 'ascending' in sort_parameters.keys() : ascending = sort_parameters['ascending']
+    else : ascending = True
+    colors = list(pd.merge(data.reset_index(), colors_df, left_on= multi_index[1], right_on='labels').sort_values(multi_index, ascending=ascending)['colors'])
 
     ax = violin_plot(
         ax=ax,
@@ -136,7 +150,7 @@ def _extract_color_from_legend(legend_prep, remove_first=False) :
     color_df = pd.DataFrame(data= colors, index= legend_prep[1], columns= ['colors'])
     return color_df
 
-def _distribution_lvl3(data: pd.Series, ax: plt.Axes, showextrema) :
+def _distribution_lvl3(data: pd.Series, ax: plt.Axes, showextrema, **kwargs) :
     """
 
     yaxis = measure_value
@@ -158,7 +172,8 @@ def _distribution_lvl3(data: pd.Series, ax: plt.Axes, showextrema) :
         data_distribution_lvl2, 
         ax,
         alpha=0.4,
-        showextrema=showextrema
+        showextrema=showextrema,
+        **kwargs
         )
 
     #Level 3
@@ -393,14 +408,21 @@ def get_markers_generator() :
     markers = (marker for marker in ['o','v','D','x','<','>','s','8','p','*','h','P','^'])
     gen = itertools.cycle(markers)
     
-def make_color_frame(labels : 'list[str]') :
+def make_color_frame(labels : 'list[str]', custom_colors=[]) :
     """
     Return a color df where labels are passed in index and unique columns 'colors' contains color values. 
     """
 
+    if isinstance(custom_colors, (list,tuple) ) :
+        if len(custom_colors) == len(labels) :
+            colors = custom_colors
+        else : colors = get_colors_list(len(labels))
+    else : colors = get_colors_list(len(labels))
+    
+    
     color_df = pd.DataFrame({
         'labels' : labels,
-        'colors' : get_colors_list(len(labels))
+        'colors' : colors,
     })
     
     return color_df.set_index('labels')

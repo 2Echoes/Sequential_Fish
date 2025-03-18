@@ -126,7 +126,7 @@ for location in Acquisition['location'].unique() :
         ))
     for detection_id in selected_detection_id]
     detection_number = len(selected_detection_id)
-
+    
     #Launching threads on cell features
     detection_fov = np.load(RUN_PATH + '/detection_fov/{0}.npz'.format(location))
     fov_list = [detection_fov[fov_idx] for fov_idx in sub_Detection['image_key']] #TODO remove max projection once arrays will be saved directly in 2D
@@ -153,6 +153,7 @@ for location in Acquisition['location'].unique() :
         Cell_save,
         Cell
     ],axis=0)
+    
 
 #Building cell_id (not unique identifier bc Cell actually has one line per detection)
 cell_IDs = Cell_save.groupby(['location','label'])['detection_id'].first().reset_index(drop=False).reset_index(drop=False, names='cell_id')
