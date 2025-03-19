@@ -2,7 +2,7 @@
 This script aims at performing segmentation and savings results as .npy format to be used in FishSeq_pipeline_quantification.py
 Drift correction is applied in FishSeq_pipeline_drift.py
 """
-import os
+import os, warnings, sys
 import numpy as np
 import pandas as pd
 import pbwrap.segmentation as segm
@@ -12,88 +12,101 @@ from tqdm import tqdm
 from Sequential_Fish.tools.utils import open_image, reorder_image_stack
 
 #### USER PARAMETERS
-from Sequential_Fish.pipeline_parameters import RUN_PATH, MODEL_DICT, OBJECT_SIZE_DICT, PLOT_VISUALS
 
-############
+def main(run_path) :
+    
+    if len(sys.argv) == 0:
+        from Sequential_Fish.pipeline_parameters import MODEL_DICT, OBJECT_SIZE_DICT, PLOT_VISUALS
+    else :
+        from Sequential_Fish.run_saves import get_parameter_dict
+        PARAMETERS = ['MODEL_DICT', 'OBJECT_SIZE_DICT', 'PLOT_VISUALS']
+        parameters_dict = get_parameter_dict(run_path, parameters=PARAMETERS)
+        MODEL_DICT = parameters_dict['MODEL_DICT']
+        OBJECT_SIZE_DICT = parameters_dict['OBJECT_SIZE_DICT']
+        PLOT_VISUALS = parameters_dict['PLOT_VISUALS']
 
-# MAIN SCRIPT
+    #Reading input folder.
+    Acquisition = pd.read_feather(run_path + "/result_tables/Acquisition.feather")
+    nuc_number = len(Acquisition['dapi_full_path'].unique())
+    SAVE_PATH = run_path + "/segmentation/"
+    VISUAL_PATH = run_path + "/visuals/segmentation/"
+    os.makedirs(SAVE_PATH, exist_ok=True)
+    os.makedirs(VISUAL_PATH, exist_ok=True)
 
-############
+    print("Starting segmentation pipeline, {0} nucleus images and {0} cytoplasm images to segment".format(nuc_number))
 
-#Reading input folder.
-Acquisition = pd.read_feather(RUN_PATH + "/result_tables/Acquisition.feather")
-nuc_number = len(Acquisition['dapi_full_path'].unique())
-SAVE_PATH = RUN_PATH + "/segmentation/"
-VISUAL_PATH = RUN_PATH + "/visuals/segmentation/"
-os.makedirs(SAVE_PATH, exist_ok=True)
-os.makedirs(VISUAL_PATH, exist_ok=True)
+    for location in tqdm(Acquisition['location'].unique()) :
+        sub_data = Acquisition.loc[Acquisition['location'] == location]
 
-print("Starting segmentation pipeline, {0} nucleus images and {0} cytoplasm images to segment".format(nuc_number))
+        #Setting output folder.
 
-for location in tqdm(Acquisition['location'].unique()) :
-    sub_data = Acquisition.loc[Acquisition['location'] == location]
-
-    #Setting output folder.
-
-    #Nucleus_segmentation
-    nucleus_path = sub_data['dapi_full_path'].unique()
-    nucleus_map = sub_data['dapi_map'].iat[0]
-    assert len(nucleus_path) == 1, '{}'.format(nucleus_path)
-    nucleus_path = nucleus_path[0]
-    nucleus_image = open_image(nucleus_path)
-    nucleus_image = reorder_image_stack(nucleus_image, nucleus_map)
-    assert nucleus_image.ndim == 4, nucleus_image.shape
-    nucleus_image = nucleus_image[:,:,:,0]
-    nucleus_image_save = nucleus_image.copy()
-    nucleus_image = np.mean(nucleus_image, axis=0)
-    nucleus_label = segm.Nucleus_segmentation(
-        dapi=nucleus_image,
-        diameter=OBJECT_SIZE_DICT['nucleus'],
-        model_type= MODEL_DICT['nucleus'],
-        use_gpu= True
-    )
-
-    #Cytoplasm segmentation
-    cytoplasm_path = sub_data['full_path'].iat[0] #First washout, also avoid opening all images together.
-    cytoplasm_map = sub_data['fish_map'].iat[0] #First washout, also avoid opening all images together.
-    cytoplasm_image = open_image(cytoplasm_path)
-    cytoplasm_image = reorder_image_stack(cytoplasm_image, cytoplasm_map)
-    cytoplasm_image = cytoplasm_image[0,:,:,:,-1]
-    cytoplasm_image = np.mean(cytoplasm_image, axis=0)
-
-    #Segmentation
-    cytoplasm_label = segm.Cytoplasm_segmentation(
-        cy3=cytoplasm_image,
-        dapi=nucleus_image,
-        diameter=OBJECT_SIZE_DICT['cytoplasm'],
-        model_type=MODEL_DICT['cytoplasm'],
-        use_gpu=True
-    )
-
-    #Saving labels
-    np.savez(
-        file= SAVE_PATH + "{0}_segmentation".format(location),
-        nucleus= nucleus_label,
-        cytoplasm= cytoplasm_label,
-        dapi_signal = nucleus_image_save,
-    )
-
-    if PLOT_VISUALS : 
-        plot.plot_segmentation_boundary(
-            image=cytoplasm_image,
-            cell_label=cytoplasm_label,
-            nuc_label=nucleus_label,
-            boundary_size=3,
-            contrast=True,
-            path_output=VISUAL_PATH + "/{0}_segmentation_cyto_view.png".format(location),
-            show=False
+        #Nucleus_segmentation
+        nucleus_path = sub_data['dapi_full_path'].unique()
+        nucleus_map = sub_data['dapi_map'].iat[0]
+        assert len(nucleus_path) == 1, '{}'.format(nucleus_path)
+        nucleus_path = nucleus_path[0]
+        nucleus_image = open_image(nucleus_path)
+        nucleus_image = reorder_image_stack(nucleus_image, nucleus_map)
+        assert nucleus_image.ndim == 4, nucleus_image.shape
+        nucleus_image = nucleus_image[:,:,:,0]
+        nucleus_image_save = nucleus_image.copy()
+        nucleus_image = np.mean(nucleus_image, axis=0)
+        nucleus_label = segm.Nucleus_segmentation(
+            dapi=nucleus_image,
+            diameter=OBJECT_SIZE_DICT['nucleus'],
+            model_type= MODEL_DICT['nucleus'],
+            use_gpu= True
         )
-        plot.plot_segmentation_boundary(
-            image=nucleus_image,
-            cell_label=cytoplasm_label,
-            nuc_label=nucleus_label,
-            boundary_size=3,
-            contrast=True,
-            path_output=VISUAL_PATH + "/{0}_segmentation_nuc_view.png".format(location),
-            show=False
+
+        #Cytoplasm segmentation
+        cytoplasm_path = sub_data['full_path'].iat[0] #First washout, also avoid opening all images together.
+        cytoplasm_map = sub_data['fish_map'].iat[0] #First washout, also avoid opening all images together.
+        cytoplasm_image = open_image(cytoplasm_path)
+        cytoplasm_image = reorder_image_stack(cytoplasm_image, cytoplasm_map)
+        cytoplasm_image = cytoplasm_image[0,:,:,:,-1]
+        cytoplasm_image = np.mean(cytoplasm_image, axis=0)
+
+        #Segmentation
+        cytoplasm_label = segm.Cytoplasm_segmentation(
+            cy3=cytoplasm_image,
+            dapi=nucleus_image,
+            diameter=OBJECT_SIZE_DICT['cytoplasm'],
+            model_type=MODEL_DICT['cytoplasm'],
+            use_gpu=True
         )
+
+        #Saving labels
+        np.savez(
+            file= SAVE_PATH + "{0}_segmentation".format(location),
+            nucleus= nucleus_label,
+            cytoplasm= cytoplasm_label,
+            dapi_signal = nucleus_image_save,
+        )
+
+        if PLOT_VISUALS : 
+            plot.plot_segmentation_boundary(
+                image=cytoplasm_image,
+                cell_label=cytoplasm_label,
+                nuc_label=nucleus_label,
+                boundary_size=3,
+                contrast=True,
+                path_output=VISUAL_PATH + "/{0}_segmentation_cyto_view.png".format(location),
+                show=False
+            )
+            plot.plot_segmentation_boundary(
+                image=nucleus_image,
+                cell_label=cytoplasm_label,
+                nuc_label=nucleus_label,
+                boundary_size=3,
+                contrast=True,
+                path_output=VISUAL_PATH + "/{0}_segmentation_nuc_view.png".format(location),
+                show=False
+            )
+            
+if __name__ == "__main__":
+    if len(sys.argv) == 0:
+        warnings.warn("Prefer launching this script with command : 'python -m Sequential_Fish pipeline input' or make sure there is no conflict for parameters loading in pipeline_parameters.py")
+        from Sequential_Fish.pipeline_parameters import RUN_PATH as run_path
+    else :
+        run_path = sys.argv[0]
+    main(run_path)    

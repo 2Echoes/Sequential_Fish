@@ -1,8 +1,10 @@
 import pandas as pd
 import numpy as np
+import warnings
 import os
 import Sequential_Fish.pipeline_parameters as parameters
 from Sequential_Fish.tools import get_datetime
+from Sequential_Fish import __run_cache_path__
 from Sequential_Fish import __version__
 
 COLUMNS = [
@@ -49,7 +51,19 @@ def create_run_dataframe() :
 def check_run_dataframe(run_dataframe: pd.DataFrame) :
     """
     Check for new parameters to be saved in Run_dataframe such as new scripts, or new user parameters.
+    Also drop duplicates and na on RUN_PATH.
     """
+    run_dataframe = run_dataframe.drop_duplicates(subset='RUN_PATH')
+    run_dataframe = run_dataframe.dropna(subset='RUN_PATH')
+    
+        #Check run_id
+    if 'index' in run_dataframe.columns : 
+        run_dataframe = run_dataframe = run_dataframe.drop('index',axis=1)
+    if len(run_dataframe) != len(run_dataframe['run_id'].unique()) or run_dataframe['run_id'].isna().any(): 
+        warnings.warn("run_id was not unique in cache or contained na, cleaning run_ids...")
+        run_dataframe = run_dataframe.drop('run_id', axis=1)
+        run_dataframe = run_dataframe.reset_index(drop=True).reset_index(drop=False, names='run_id')
+    
     model = create_run_dataframe()
     for col in model.columns :
         if not col in run_dataframe.columns :
@@ -110,3 +124,43 @@ def add_new_run(run_dataframe : pd.DataFrame) :
     ], axis= 0)
 
     return run_dataframe
+
+def get_run_cache() :
+    
+    if not os.path.isfile(__run_cache_path__) :
+        print(f"Creating run_cache at {__run_cache_path__}")
+        run_dataframe = create_run_dataframe()
+        run_dataframe.reset_index(drop=True).to_feather(__run_cache_path__)
+    else :
+        run_dataframe = pd.read_feather(__run_cache_path__)
+    
+    return run_dataframe
+
+def _get_run_path_index(run_dataframe : pd.DataFrame, run_path : str) :
+    
+    assert len(run_dataframe['RUN_PATH'].unique()) == len(run_dataframe), "RUN_PATH is not unique in run_dataframe"
+    
+    return run_dataframe.loc[run_dataframe['RUN_PATH'] == run_path].index[0]
+    
+
+def get_parameter(
+    run_dataframe : pd.DataFrame,
+    run_path : str,
+    parameter : str
+) :
+    index = _get_run_path_index(run_dataframe, run_path)
+    
+    parameter = run_dataframe.at[index, parameter.upper()]
+    
+    if isinstance(parameter, (list, np.ndarray)) :
+        parameter = tuple(parameter)
+    
+    return parameter
+
+def get_parameter_dict(
+    run_path : str,
+    parameters : 'list[str]'
+) :
+    run_dataframe = get_run_cache()
+    
+    return {parameter : get_parameter(run_dataframe, run_path, parameter) for parameter in parameters}

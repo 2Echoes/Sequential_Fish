@@ -3,7 +3,6 @@ import logging
 import os
 from datetime import datetime
 
-from Sequential_Fish.pipeline_parameters import RUN_PATH
 from Sequential_Fish.run_saves import validate_script, fail_script
 
 """
@@ -16,6 +15,14 @@ All scripts of a round are launched even if an error is returned within the roun
 script_folder = os.path.abspath(__file__)
 script_folder = os.path.dirname(script_folder)
 
+from Sequential_Fish.pipeline_parameters import RUN_PATH
+log_file = RUN_PATH + "/run_log.log"
+logging.basicConfig(
+    filename=log_file,
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    )
+
 scripts_rounds = {
     'input' : ['input.py'],
     'analysis' : ['detection.py', 'segmentation.py', 'drift.py'],
@@ -24,22 +31,17 @@ scripts_rounds = {
     'quantification' : ['quantification.py']
 }
 
-
-log_file = RUN_PATH + "/run_log.log"
-logging.basicConfig(
-    filename=log_file,
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-)
-
 ### script launcher function
-def launch_script(script_name):
+def launch_script(script_name, run_path):
     """Launch script from pipeline."""
+    
+
+    
     try:
         logging.info(f"Exécution du script : {script_name}")
         script_start = datetime.now()
         result = subprocess.run(
-            ["python", script_name],
+            ["python", script_name, run_path],
             check=True,
             text=True,
             capture_output=True
@@ -52,14 +54,14 @@ def launch_script(script_name):
         script_end = datetime.now()
         run_duration = (script_end - script_start).total_seconds()
 
-        fail_script(RUN_PATH, script=script_name)
+        fail_script(run_path, script=script_name)
         logging.info("script duration : {0}".format(run_duration))
         logging.error(f"script failed {script_name}:\n{e.stderr}")
 
         return False
     
     else :
-        validate_script(RUN_PATH, script=script_name)
+        validate_script(run_path, script=script_name)
         
         logging.info("script duration : {0}".format(run_duration))
         logging.info(f"script succeed {script_name}:\n{result.stdout}")
@@ -75,7 +77,7 @@ def main():
         sucess = []
         for script in scripts:
             if os.path.exists(script_folder + '/' + script):
-                result = launch_script(script_folder + '/' + script)
+                result = launch_script(script_folder + '/' + script, run_path=RUN_PATH)
                 sucess.append(result)
             else:
                 logging.warning(f"File {script} not found.")

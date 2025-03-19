@@ -5,6 +5,7 @@ from ..tools import get_datetime
 from .dataframe import add_new_run
 
 from .._pipeline_scripts import PIPELINE_SCRIPTS
+from .dataframe import create_run_dataframe
 
 
 def validate_script(RUN_PATH, script: str) :
@@ -37,16 +38,16 @@ def fail_script(RUN_PATH, script) :
     run_dataframe.loc[run_dataframe['RUN_PATH'] == RUN_PATH, [script]] = True
     run_dataframe.reset_index(drop=True).to_feather(__run_cache_path__)
     
-def check_run(RUN_PATH) :
+def check_run(run_path) :
     """
     Check if folder is already in cached runs. If not initiate a new run with current parameters and scripts to False.
     """
     run_dataframe = pd.read_feather(__run_cache_path__)
     
-    if RUN_PATH in run_dataframe['RUN_PATH'] :
-        print(f"Updating RUN : {RUN_PATH}")
+    if run_path in list(run_dataframe['RUN_PATH']) :
+        print(f"Updating RUN : {run_path}")
     else :
-        print(f"Initiating new RUN : {RUN_PATH}")
+        print(f"Initiating new RUN : {run_path}")
         run_dataframe = add_new_run(run_dataframe)
         run_dataframe.reset_index(drop=True).to_feather(__run_cache_path__)
         
@@ -54,5 +55,3 @@ def run_status() :
     run_dataframe = pd.read_feather(__run_cache_path__)
     print(run_dataframe.loc[:,['run_id', 'RUN_PATH',] + PIPELINE_SCRIPTS])
     
-def get_run_cache() :
-    return pd.read_feather(__run_cache_path__)
