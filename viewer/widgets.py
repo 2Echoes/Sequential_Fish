@@ -19,7 +19,7 @@ from .utils import reshape_stack
 from .utils import correct_map
 
 from pbwrap.preprocessing.alignement import shift_array
-from ..analysis._density import multichannel_clustering, spot_count_map
+from ._density import multichannel_clustering, spot_count_map
 
 
 class table_dict_type(TypedDict) :
