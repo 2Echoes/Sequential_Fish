@@ -23,6 +23,7 @@ VOXEL_SIZE = (200,97,97)
 def main() :
     
     run_path = select_path()
+    if run_path is None : quit()
     
     TABLES = ['Acquisition', 'Detection', 'Spots', 'Clusters', 'Drift', 'Cell', 'Colocalisation', 'Gene_map']
     tables_dict = {

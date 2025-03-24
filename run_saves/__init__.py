@@ -13,3 +13,5 @@ from .update import validate_script
 from .update import fail_script
 from .update import check_run
 from .update import run_status
+from .update import update_run
+from .update import add_path_to_cache

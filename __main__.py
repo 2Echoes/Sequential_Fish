@@ -17,6 +17,7 @@ def main():
 
     run_dataframe = get_run_cache()
     run_dataframe = check_run_dataframe(run_dataframe)
+    run_dataframe.reset_index(drop=True).to_feather(run_cache_path)
     
     #CALL TO MODULES
     if len(sys.argv) < 2:
@@ -47,7 +48,7 @@ def main():
             else :
                 for script in submodules : 
                     if not script.endswith('.py') : script += ".py"
-                    launch_script(script_folder + '/' + script)
+                    launch_script(script_folder + '/' + script, run_path=RUN_PATH)
                 print("all scripts ended sucessfully")
     
     elif module == "analysis" :
