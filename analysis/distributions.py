@@ -32,13 +32,15 @@ def merge_data(
         keys= 'target'
     )
     
+    
     Spots = safe_merge_no_duplicates(
         Spots,
         Detection,
         on='detection_id',
         keys= ['target', 'location']
     )
-    
+
+
     Cell = safe_merge_no_duplicates(
         Cell,
         Detection,

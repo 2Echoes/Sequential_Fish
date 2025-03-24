@@ -6,7 +6,8 @@ import pandas as pd
 from .analysis_parameters import FILTER_RNA
 
 def Spots_filtering(
-    Spots : pd.DataFrame, 
+    Spots : pd.DataFrame,
+    Cell : pd.DataFrame = None,
     filter_washout= True,
     segmentation_filter= True,
     ) :
@@ -16,6 +17,16 @@ def Spots_filtering(
     
     if segmentation_filter :
         Spots = Spots.loc[Spots['cell_label'] != 0]
+        # Spots = Spots.loc[] #Create couple(location, label) and try if spots couple are cell couple.
+    
+    if not Cell is None :
+        Spots = pd.merge(
+            Spots,
+            Cell,
+            how='inner',
+            left_on= ['location','cell_label','detection_id'],
+            right_on= ['location','label','detection_id']
+        )
     
     return Spots
 
