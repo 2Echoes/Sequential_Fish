@@ -15,15 +15,31 @@ from Sequential_Fish.tools.utils import open_image, reorder_image_stack
 
 def main(run_path) :
     
-    if len(sys.argv) == 0:
+    print(f"segmentation runing for {run_path}")
+    
+    if len(sys.argv) == 1:
         from Sequential_Fish.pipeline_parameters import MODEL_DICT, OBJECT_SIZE_DICT, PLOT_VISUALS
     else :
         from Sequential_Fish.run_saves import get_parameter_dict
-        PARAMETERS = ['MODEL_DICT', 'OBJECT_SIZE_DICT', 'PLOT_VISUALS']
-        parameters_dict = get_parameter_dict(run_path, parameters=PARAMETERS)
-        MODEL_DICT = parameters_dict['MODEL_DICT']
-        OBJECT_SIZE_DICT = parameters_dict['OBJECT_SIZE_DICT']
+        PARAMETERS = ['nucleus_model', 'cytoplasm_model', 'nucleus_size', 'cytoplasm_size', 'PLOT_VISUALS']
+        parameters_dict = get_parameter_dict(run_path, parameters=PARAMETERS)        
         PLOT_VISUALS = parameters_dict['PLOT_VISUALS']
+        nucleus_model = parameters_dict['nucleus_model']
+        cytoplasm_model = parameters_dict['cytoplasm_model']
+        nucleus_size = parameters_dict['nucleus_size']
+        cytoplasm_size = parameters_dict['cytoplasm_size']
+
+        MODEL_DICT = {
+            'cytoplasm_model' : cytoplasm_model,
+            'nucleus_model' : nucleus_model,
+        }
+        
+        OBJECT_SIZE_DICT = {
+            'nucleus_size' : nucleus_size,
+            'cytoplasm_size' : cytoplasm_size
+        }
+        
+
 
     #Reading input folder.
     Acquisition = pd.read_feather(run_path + "/result_tables/Acquisition.feather")
@@ -53,8 +69,8 @@ def main(run_path) :
         nucleus_image = np.mean(nucleus_image, axis=0)
         nucleus_label = segm.Nucleus_segmentation(
             dapi=nucleus_image,
-            diameter=OBJECT_SIZE_DICT['nucleus'],
-            model_type= MODEL_DICT['nucleus'],
+            diameter=OBJECT_SIZE_DICT['nucleus_size'],
+            model_type= MODEL_DICT['nucleus_model'],
             use_gpu= True
         )
 
@@ -70,8 +86,8 @@ def main(run_path) :
         cytoplasm_label = segm.Cytoplasm_segmentation(
             cy3=cytoplasm_image,
             dapi=nucleus_image,
-            diameter=OBJECT_SIZE_DICT['cytoplasm'],
-            model_type=MODEL_DICT['cytoplasm'],
+            diameter=OBJECT_SIZE_DICT['cytoplasm_size'],
+            model_type=MODEL_DICT['cytoplasm_model'],
             use_gpu=True
         )
 
@@ -104,9 +120,9 @@ def main(run_path) :
             )
             
 if __name__ == "__main__":
-    if len(sys.argv) == 0:
+    if len(sys.argv) == 1:
         warnings.warn("Prefer launching this script with command : 'python -m Sequential_Fish pipeline input' or make sure there is no conflict for parameters loading in pipeline_parameters.py")
         from Sequential_Fish.pipeline_parameters import RUN_PATH as run_path
     else :
-        run_path = sys.argv[0]
+        run_path = sys.argv[1]
     main(run_path)    

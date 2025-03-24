@@ -11,25 +11,33 @@ from Sequential_Fish.tools.utils import open_image, auto_map_channels, _find_one
 
 def main(run_path) :
 
-    if len(sys.argv) == 0:
+    print(f"input runing for {run_path}")
+
+    if len(sys.argv) == 1:
         from Sequential_Fish.pipeline_parameters import FOLDER_KEYS, MAP_FILENAME, cycle_regex, CYCLE_KEY, GENES_NAMES_KEY, WASHOUT_KEY_WORD, HAS_BEAD_CHANNEL
     else :
         from Sequential_Fish.run_saves import get_parameter_dict
-        PARAMETERS = ['FOLDER_KEYS', 'MAP_FILENAME', 'cycle_regex', 'CYCLE_KEY', 'GENES_NAMES_KEY', 'WASHOUT_KEY_WORD', 'HAS_BEAD_CHANNEL']
+        PARAMETERS = ['nucleus_folder','fish_folder', 'MAP_FILENAME', 'cycle_regex', 'CYCLE_KEY', 'GENES_NAMES_KEY', 'WASHOUT_KEY_WORD', 'HAS_BEAD_CHANNEL']
         parameters_dict = get_parameter_dict(run_path, parameters=PARAMETERS)
-        FOLDER_KEYS = parameters_dict['FOLDER_KEYS']
+        nucleus_folder = parameters_dict['nucleus_folder']
+        fish_folder = parameters_dict['fish_folder']
         MAP_FILENAME = parameters_dict['MAP_FILENAME']
         cycle_regex = parameters_dict['cycle_regex']
         CYCLE_KEY = parameters_dict['CYCLE_KEY']
         GENES_NAMES_KEY = parameters_dict['GENES_NAMES_KEY']
         WASHOUT_KEY_WORD = parameters_dict['WASHOUT_KEY_WORD']
         HAS_BEAD_CHANNEL = parameters_dict['HAS_BEAD_CHANNEL']
+        
+        FOLDER_KEYS = {
+            'nucleus_folder' : nucleus_folder,
+            'fish_folder' : fish_folder,
+        }
     
     #Reading input folder.
     file_dict = prepro.assert_run_folder_integrity(
         run_path=run_path,
-        fish_folder=FOLDER_KEYS.get('fish'),
-        nucleus_folder=FOLDER_KEYS.get('nucleus')
+        fish_folder=FOLDER_KEYS.get('fish_folder'),
+        nucleus_folder=FOLDER_KEYS.get('nucleus_folder')
         )
     location_list = list(file_dict.keys())
     location_list.sort()
@@ -64,7 +72,7 @@ def main(run_path) :
     for location_index, location in enumerate(location_list) :
 
         #Get dapi_path
-        dapi_full_path = run_path + "/{0}/{1}/".format(FOLDER_KEYS.get('nucleus'), location)
+        dapi_full_path = run_path + "/{0}/{1}/".format(FOLDER_KEYS.get('nucleus_folder'), location)
         assert len(os.listdir(dapi_full_path)) == 1
         dapi_full_path += os.listdir(dapi_full_path)[0]
         assert os.path.isfile(dapi_full_path)
@@ -80,7 +88,7 @@ def main(run_path) :
         Acquisition.loc[index, ['dapi_map']] = pd.Series((dapi_map,)* cycle_number, index=index)
 
         #Setting general fish informations
-        fish_path = run_path + "/{0}/{1}/".format(FOLDER_KEYS.get('fish'), location)
+        fish_path = run_path + "/{0}/{1}/".format(FOLDER_KEYS.get('fish_folder'), location)
         fish_path_list = os.listdir(fish_path)
         fish_path_list.sort() # THIS MUST GIVE CYCLE ORDERED LIST ie : filename cycle matches map cycles and rest of filename doesn't change list order.
         fish_im = open_image(fish_path + fish_path_list[0]) #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
@@ -149,9 +157,10 @@ def main(run_path) :
     
     
 if __name__ == "__main__":
-    if len(sys.argv) == 0:
+    print(sys.argv)
+    if len(sys.argv) == 1:
         warnings.warn("Prefer launching this script with command : 'python -m Sequential_Fish pipeline input' or make sure there is no conflict for parameters loading in pipeline_parameters.py")
         from Sequential_Fish.pipeline_parameters import RUN_PATH as run_path
     else :
-        run_path = sys.argv[0]
+        run_path = sys.argv[1]
     main(run_path)    

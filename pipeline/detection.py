@@ -19,8 +19,10 @@ from tqdm import tqdm
 #########
 
 def main(run_path) :
+
+    print(f"detection runing for {run_path}")
     
-    if len(sys.argv) == 0:
+    if len(sys.argv) == 1:
         from Sequential_Fish.pipeline_parameters import detection_MAX_WORKERS as MAX_WORKERS
         from Sequential_Fish.pipeline_parameters import VOXEL_SIZE, SPOT_SIZE, ALPHA, BETA, GAMMA, CLUSTER_SIZE, MIN_SPOT_PER_CLUSTER, ARTIFACT_RADIUS, DETECTION_SLICE_TO_REMOVE
     
@@ -43,7 +45,6 @@ def main(run_path) :
     
     #Loading data
     Acquisition = pd.read_feather(run_path + "/result_tables/Acquisition.feather")
-    print(Acquisition)
 
     #preparing folders
     save_path = run_path + "/result_tables/"
@@ -73,9 +74,18 @@ def main(run_path) :
         multichannel_stack = open_image(image_path)# This open 4D multichannel image (all the images are loaded in one call)
         multichannel_stack = reorder_image_stack(multichannel_stack, image_map)
 
+        #Converting na back to None
+        bottom_index, top_index = DETECTION_SLICE_TO_REMOVE
+        if np.isnan(bottom_index) : 
+            bottom_index = None
+        elif type(bottom_index) != int : bottom_index= int(bottom_index)
+        if np.isnan(top_index) : top_index = None
+        elif type(top_index) != int : top_index= int(bottom_index)
+        
         #Removing Z slices (USER SETTING)
-        if type(DETECTION_SLICE_TO_REMOVE[1]) != type(None) : DETECTION_SLICE_TO_REMOVE[1] = -DETECTION_SLICE_TO_REMOVE[1]
-        multichannel_stack = multichannel_stack[:,DETECTION_SLICE_TO_REMOVE[0]:DETECTION_SLICE_TO_REMOVE[1]]
+        if type(top_index) != type(None) : top_index = -top_index
+        
+        multichannel_stack = multichannel_stack[:,bottom_index:top_index]
 
         multichannel_stack = multichannel_stack[...,:-1]
         images_list = [np.moveaxis(channel,[3,0,1,2],[0,1,2,3]) for channel in multichannel_stack]
@@ -213,9 +223,9 @@ def main(run_path) :
     
     
 if __name__ == "__main__":
-    if len(sys.argv) == 0:
+    if len(sys.argv) == 1:
         warnings.warn("Prefer launching this script with command : 'python -m Sequential_Fish pipeline detection' or make sure there is no conflict for parameters loading in pipeline_parameters.py")
         from Sequential_Fish.pipeline_parameters import RUN_PATH as run_path
     else :
-        run_path = sys.argv[0]
+        run_path = sys.argv[1]
     main(run_path)     

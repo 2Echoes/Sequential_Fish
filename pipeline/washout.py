@@ -9,7 +9,9 @@ from Sequential_Fish.tools import safe_merge_no_duplicates
 
 def main(run_path) :
     
-    if len(sys.argv) == 0:
+    print(f"washout runing for {run_path}")
+    
+    if len(sys.argv) == 1:
         from Sequential_Fish.pipeline_parameters import WASHOUT_KEY_WORD
     else :
         from Sequential_Fish.run_saves import get_parameter_dict
@@ -99,9 +101,9 @@ def main(run_path) :
     print("Done")
 
 if __name__ == "__main__":
-    if len(sys.argv) == 0:
+    if len(sys.argv) == 1:
         warnings.warn("Prefer launching this script with command : 'python -m Sequential_Fish pipeline input' or make sure there is no conflict for parameters loading in pipeline_parameters.py")
         from Sequential_Fish.pipeline_parameters import RUN_PATH as run_path
     else :
-        run_path = sys.argv[0]
+        run_path = sys.argv[1]
     main(run_path)        

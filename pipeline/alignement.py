@@ -6,6 +6,9 @@ import pandas as pd
 from Sequential_Fish.tools import safe_merge_no_duplicates
 
 def main(run_path) :
+    
+    print(f"alignement runing for {run_path}")
+    
     Acquisition = pd.read_feather(run_path + '/result_tables/Acquisition.feather')
     Drift = pd.read_feather(run_path + '/result_tables/Drift.feather')
     Spots = pd.read_feather(run_path + '/result_tables/Spots.feather')
@@ -40,8 +43,12 @@ def main(run_path) :
 
     #Applying drift correction
     for key in ['drifted_z', 'drifted_y', 'drifted_x'] :
-        if key in Spots.columns : Spots = Spots.drop(columns=key)
-        if key in Clusters.columns : Clusters = Clusters.drop(columns=key)
+        if key in Spots.columns : 
+            Spots[key[-1]] = Spots[key]
+            Spots = Spots.drop(columns=key)
+        if key in Clusters.columns : 
+            Clusters[key[-1]] = Clusters[key]
+            Clusters = Clusters.drop(columns=key)
     Spots = Spots.rename(columns={'z' : 'drifted_z', 'y' : 'drifted_y', 'x' : 'drifted_x'}) #Keeping old values
     for dim_index, i in enumerate(['z','y','x']) :
         Spots[i] = (Spots['drifted_{0}'.format(i)] + Spots['drift_{0}'.format(i)]).astype(int)
@@ -61,10 +68,10 @@ def main(run_path) :
     
     
 if __name__ == "__main__":
-    if len(sys.argv) == 0:
+    if len(sys.argv) == 1:
         warnings.warn("Prefer launching this script with command : 'python -m Sequential_Fish pipeline alignement' or make sure there is no conflict for parameters loading in pipeline_parameters.py")
         from Sequential_Fish.pipeline_parameters import RUN_PATH as run_path
     else :
-        run_path = sys.argv[0]
+        run_path = sys.argv[1]
     main(run_path) 
     
