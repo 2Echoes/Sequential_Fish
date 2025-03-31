@@ -12,7 +12,7 @@ from .widgets import locations_container
 from .widgets import analysis_container
 from magicgui import widgets as wi
 
-from .input import select_path
+from ..run_saves.gui import select_path
 
 from pbwrap.plot.utils import get_colors_list, _get_blue_colors, _get_green_colors, _get_orange_colors, _get_red_colors, _get_yellow_colors, _get_pink_colors, _get_purple_colors
 
@@ -25,7 +25,7 @@ def main() :
     run_path = select_path()
     if run_path is None : quit()
     
-    TABLES = ['Acquisition', 'Detection', 'Spots', 'Clusters', 'Drift', 'Cell', 'Colocalisation', 'Gene_map']
+    TABLES = ['Acquisition', 'Detection', 'Spots', 'Clusters', 'Drift', 'Cell', 'Gene_map']
     tables_dict = {
         table : pd.read_feather(run_path + '/result_tables/' + table + '.feather')  for table in TABLES
     }

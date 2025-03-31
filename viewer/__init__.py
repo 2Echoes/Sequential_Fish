@@ -1,7 +1,6 @@
 
 
 
-
 def run(*args) :
     """
     Entry point to launch Sequential Fish viewer
