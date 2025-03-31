@@ -53,8 +53,6 @@ def main():
     
     elif module == "analysis" :
         
-        print(f"Data set selected : {RUN_PATH}")
-        
         if len(submodules) == 0 : 
             submodules = ['all']
             print("Starting all analysis modules")

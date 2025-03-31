@@ -4,10 +4,11 @@
 
 ################
 #fullpath to main folder given by experimentalist
+RUN_PATH = "/mnt/ssd/SSD_floricslimani/Fish_seq/Davide/2024-08-07 - SeqFISH_Run6 - HeLa_R2TP1-2/"
+# RUN_PATH = "/mnt/ssd/SSD_floricslimani/Fish_seq/Davide/2024-08-12 - SeqFISH - HeLa - Puro - R2TP1-2_Run7"
 # RUN_PATH = "/mnt/ssd/SSD_floricslimani/Fish_seq/Davide/2024-09-03 - SeqFISH_Run8 - HeLa_POLR2"
+# RUN_PATH = "/mnt/ssd/SSD_floricslimani/Fish_seq/Davide/2024-10-02 - SeqFISH_Run9 - HeLa _POLR2"
 # RUN_PATH = "/mnt/ssd/SSD_floricslimani/Fish_seq/Davide/2024-10-09 - SeqFISH_Run10 - HeLa-Puro_POLR2" 
-RUN_PATH = "/mnt/ssd/SSD_floricslimani/Fish_seq/Davide/2024-08-12 - SeqFISH - HeLa - Puro - R2TP1-2_Run7"
-# RUN_PATH = "/mnt/ssd/SSD_floricslimani/Fish_seq/Davide/2024-08-07 - SeqFISH_Run6 - HeLa_R2TP1-2/"
 VOXEL_SIZE = (200,97,97) # size of a pixel in nanometer (z,y,x)
 WASHOUT_KEY_WORD = 'Washout' #key for washout in gene map excel
 HAS_BEAD_CHANNEL = True
@@ -17,8 +18,8 @@ HAS_BEAD_CHANNEL = True
 # 1. Input
 
 ################
-MAP_FILENAME = "HeLa-R2TP_Run7.xlsx"  #filename of required map file giving cycles names
-# MAP_FILENAME = "HeLa-R2TP_Run6.xlsx"  #filename of required map file giving cycles names
+# MAP_FILENAME = "HeLa-POLR2_Run9.xlsx"  #filename of required map file giving cycles names
+MAP_FILENAME = "HeLa-R2TP_Run6.xlsx"  #filename of required map file giving cycles names
 # MAP_FILENAME = "HeLa-Puro-POLR2_Run10.xlsx"  #filename of required map file giving cycles names
 CYCLE_KEY = "Cycle n."
 GENES_NAMES_KEY = ["Gene1 (Ch1 - Cy5)", "Gene2 (Ch2 - Cy3)"] # Ordered by channel
@@ -37,6 +38,7 @@ FOLDER_KEYS = { # folder names where nucleus and fish images can be found (requi
 # 2. Segmentation
 
 ################
+
 MODEL_DICT = {#cellpose model names, required keys : 'nucleus' and 'cytoplasm'
     'nucleus_model' : 'nuclei',
     'cytoplasm_model' : 'cyto3'
@@ -48,9 +50,6 @@ OBJECT_SIZE_DICT = {#size in px given to cellpose for prediction
 }
 
 PLOT_VISUALS = True
-
-
-
 
 ################
 

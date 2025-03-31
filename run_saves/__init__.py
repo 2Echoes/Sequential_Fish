@@ -9,6 +9,8 @@ from .dataframe import get_parameter
 from .dataframe import get_parameter_dict
 from .dataframe import get_run_cache
 
+from .gui import select_path
+
 from .update import validate_script
 from .update import fail_script
 from .update import check_run

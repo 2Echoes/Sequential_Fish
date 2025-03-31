@@ -130,6 +130,7 @@ def check_run(run_path) :
         add_new_run(run_dataframe)
         
 def run_status() :
-    run_dataframe = pd.read_feather(__run_cache_path__)
-    print(run_dataframe.loc[:,['run_id', 'RUN_PATH',] + PIPELINE_SCRIPTS])
+    run_dataframe = get_run_cache()
+    run_dataframe['folder'] = run_dataframe['RUN_PATH'].apply(os.path.basename)
+    print(run_dataframe.loc[:,['run_id', 'folder','RUN_PATH',] + PIPELINE_SCRIPTS])
     
