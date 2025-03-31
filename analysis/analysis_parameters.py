@@ -1,10 +1,7 @@
 
-RUN_PATH = "/mnt/ssd/SSD_floricslimani/Fish_seq/Davide/2024-08-12 - SeqFISH - HeLa - Puro - R2TP1-2_Run7"
-# RUN_PATH = "/mnt/ssd/SSD_floricslimani/Fish_seq/Davide/2024-10-09 - SeqFISH_Run10 - HeLa-Puro_POLR2"
-FILTER_RNA = ['POLR2A_20']
+FILTER_RNA = ['POLR2B_20']
 
-
-#Distributions
+# Distributions
 distribution_measures = [
     'rna_number', 
     'cluster_number', 

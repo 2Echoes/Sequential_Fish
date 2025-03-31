@@ -7,7 +7,20 @@ import functools
 import itertools
 from itertools import zip_longest, chain
 from math import ceil
+from ..tools import safe_merge_no_duplicates
 
+def get_xlabels(ax : plt.Axes) :
+    xtickslabels = ax.get_xticklabels()
+    xlabels = [text.get_text() for text in xtickslabels]
+    
+    return xlabels
+
+def get_ylabels(ax : plt.Axes) :
+    ytickslabels = ax.get_yticklabels()
+    ylabels = [text.get_text() for text in ytickslabels]
+    
+    return ylabels
+    
 
 def _get_min_cluster_radius(voxel_size) :
     return max(voxel_size)
@@ -19,6 +32,52 @@ def _get_voxel_size(Detection : pd.DataFrame) :
     
     return voxel_size
 
+def merge_data(
+    Acquisition : pd.DataFrame,
+    Detection : pd.DataFrame,
+    Cell : pd.DataFrame,
+    Spots : pd.DataFrame,
+    Gene_map : pd.DataFrame,
+) :
+    """
+    Returns : Detection, Cell, Spots
+    """
+    Detection = safe_merge_no_duplicates(
+        Detection,
+        Acquisition,
+        on= 'acquisition_id',
+        keys= ['cycle']
+    )
+    
+    Detection = safe_merge_no_duplicates(
+        Detection,
+        Gene_map,
+        on= ['cycle', 'color_id'],
+        keys= 'target'
+    )
+    
+    
+    Spots = safe_merge_no_duplicates(
+        Spots,
+        Detection,
+        on='detection_id',
+        keys= ['target', 'location']
+    )
+
+
+    Cell = safe_merge_no_duplicates(
+        Cell,
+        Detection,
+        on='detection_id',
+        keys='target'
+    )
+    
+    return Detection, Cell, Spots
+
+
+
+
+## PLOTS
 
 
 def distribution_super_plot(data, ax, title=None, xlabel=None, ylabel=None, showextrema=False, **kwargs) :

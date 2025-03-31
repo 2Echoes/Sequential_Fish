@@ -3,15 +3,14 @@ Submodules aiming at de
 """
 
 import os
+import logging, traceback
 import pandas as pd
 import numpy as np
 import bigfish.detection as detection
 import matplotlib.pyplot as plt
-import logging
 
 from .utils import _get_min_cluster_radius, _get_voxel_size
 from ..tools import safe_merge_no_duplicates
-from ..pipeline_parameters import RUN_PATH
 
 #properties hints
 class multi_rna_cluster_DataFrame(pd.DataFrame):
@@ -336,6 +335,7 @@ def density_analysis(
     Detection : pd.DataFrame,
     Spots : pd.DataFrame,
     Gene_map : pd.DataFrame,
+    run_path : str,
     min_number_spots = 3,
     min_diversity = 3,
     cluster_radius = None,
@@ -356,7 +356,7 @@ def density_analysis(
     """
 
    
-    output_path = RUN_PATH + "/analysis/density_analysis/"
+    output_path = run_path + "/analysis/density_analysis/"
     os.makedirs(output_path, exist_ok=True)
     
     log_file = output_path + "/density_analysis_log.log"
@@ -439,8 +439,7 @@ def density_analysis(
         )
     
     except Exception as e :
-        logging.error(f"analysis failed :\n{e.stderr}")
-        
+        logging.error(f"analysis failed :\n{traceback.format_exc()}")
         return False
         
     else :
