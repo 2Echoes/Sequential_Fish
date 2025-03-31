@@ -76,11 +76,19 @@ def main(run_path) :
 
         #Converting na back to None
         bottom_index, top_index = DETECTION_SLICE_TO_REMOVE
-        if np.isnan(bottom_index) : 
+        if bottom_index is None :
+            pass
+        elif np.isnan(bottom_index) : 
             bottom_index = None
         elif type(bottom_index) != int : bottom_index= int(bottom_index)
-        if np.isnan(top_index) : top_index = None
-        elif type(top_index) != int : top_index= int(bottom_index)
+        
+        if top_index is None :
+            pass
+        elif np.isnan(top_index) : 
+            top_index = None
+        elif type(top_index) != int : 
+            top_index= int(bottom_index)
+        
         
         #Removing Z slices (USER SETTING)
         if type(top_index) != type(None) : top_index = -top_index
@@ -217,7 +225,7 @@ def main(run_path) :
     Spots_save = Spots_save.drop(columns='spot_id').reset_index(drop=False, names="spot_id")
 
     #Saving results 
-    Detection_save.to_feather(save_path + '/Detection.feather   ')
+    Detection_save.to_feather(save_path + '/Detection.feather')
     Spots_save.to_feather(save_path + '/Spots.feather') 
     Clusters_save.to_feather(save_path + '/Clusters.feather')
     
