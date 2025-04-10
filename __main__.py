@@ -46,10 +46,14 @@ def main():
             if not all([script in PIPELINE_SCRIPTS for script in submodules]) :
                 print(f"Unknown pipeline scripts. \nChoose from : {PIPELINE_SCRIPTS}")
             else :
+                error_count = 0
                 for script in submodules : 
                     if not script.endswith('.py') : script += ".py"
-                    launch_script(script_folder + '/' + script, run_path=RUN_PATH)
-                print("all scripts ended sucessfully")
+                    sucess = launch_script(script_folder + '/' + script, run_path=RUN_PATH)
+
+                    if not sucess : error_count +=1
+                
+                print(f"all scripts ended with {error_count} errors. If any, error can be checked in run_log file.")
     
     elif module == "analysis" :
         
