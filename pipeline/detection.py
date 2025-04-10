@@ -101,10 +101,8 @@ def main(run_path) :
             [colors for colors in channel]
              for channel in images_list]
         image_number = len(multichannel_stack)
-        print("{0} fov found.".format(image_number))
         colors = list(zip(*images_list))
         colors_number = len(colors)
-        print("{0} colors found.".format(colors_number))
 
         #Preparing threads arguments
         Detection = pd.DataFrame({
@@ -125,7 +123,6 @@ def main(run_path) :
         threshold_col_mask = Acquisition.columns.str.contains('Threshold') #looking for Threshold_0, Threshold_1 col
         if threshold_col_mask.any() :
             threshold_col = Acquisition.columns[threshold_col_mask]
-            print("threshold column found in Acquisition")
             Detection_line_number = len(Detection)
             Acquisition.loc[:,threshold_col] = Acquisition.loc[:,threshold_col].fillna('').replace('',None)
             Detection = pd.merge(
