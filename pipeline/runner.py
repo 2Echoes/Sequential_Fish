@@ -1,6 +1,6 @@
 import subprocess
 import logging
-import os
+import os, traceback
 from datetime import datetime
 
 from Sequential_Fish.run_saves import validate_script, fail_script
@@ -56,7 +56,7 @@ def launch_script(script_name, run_path):
 
         fail_script(run_path, script=script_name)
         logging.info("script duration : {0}".format(run_duration))
-        logging.error(f"script failed {script_name}:\n{e.stderr}")
+        logging.error(f"script failed {script_name}:\n{traceback.format_exc()}")
 
         return False
     
