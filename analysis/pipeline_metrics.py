@@ -39,7 +39,7 @@ def cell_number(
 def _test_washout_parity(Spots : pd.DataFrame) :
     parity = Spots.loc[Spots['target'].str.contains('Washout')]['cycle'] % 2
     
-    assert len(parity.unique()) == 1, f"Washout detected for pair and unpair cycles.\n"
+    assert len(parity.unique()) == 1, f"Washout detected for pair and unpair cycles.\n{Spots.loc[Spots['target'].str.contains('Washout')].groupby('target')['cycle'].unique()}"
     
     washout_are_uneven_number = (parity == 1).all()
     
