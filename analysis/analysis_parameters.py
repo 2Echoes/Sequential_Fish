@@ -1,6 +1,12 @@
 
 FILTER_RNA = ['POLR2B_20']
 
+RENAME_RULE = {
+    "Washout_18_1" : "Washout_19_1",
+    "POLR2A_16" : "POLR2A_end",
+    "POLR2A_0" : "POLR2A",
+}
+
 # Distributions
 distribution_measures = [
     'rna_number', 

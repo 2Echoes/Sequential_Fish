@@ -30,6 +30,10 @@ def run(*args) :
     #Post-processing
     unfiltered_Spots = Spots.copy()
     
+    #Rename target
+    from .analysis_parameters import RENAME_RULE
+    Gene_map["target"] = Gene_map['target'].replace(RENAME_RULE)
+    
     Spots = Spots_filtering(
         Spots,
         filter_washout=True,
