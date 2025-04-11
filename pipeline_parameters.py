@@ -65,8 +65,8 @@ ALPHA = 0.5  # aims at building reference spot as the 'alpha-percentile' of spot
 BETA = 1 # aims at choosing regions to perform deconvolution on. Algorithm looks for regions with bright pixel connected. beta defines what bright pixel are with test : pixel_intensity >= MEDIAN_spot_intensity * beta (independantly of alpha)
 GAMMA = 2 # size of kernel for gaussian blur performed before deconvolution.
 
-CLUSTER_SIZE = 300 #size of cluster in nanometer (radius for DBScan algorithm)
-MIN_SPOT_PER_CLUSTER = 3 #
+CLUSTER_SIZE = 400 #size of cluster in nanometer (radius for DBScan algorithm)
+MIN_SPOT_PER_CLUSTER = 5 #
 
 ARTIFACT_RADIUS = 1400 # Radius of spots artifact to remove in nanometers.
 DETECTION_SLICE_TO_REMOVE = [5,None] # number of slice you want to remove bottom/top If you don't want to remove use None. ie : 1,None removes one slice from the bottom and none from the top

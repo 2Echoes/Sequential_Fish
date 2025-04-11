@@ -126,7 +126,8 @@ def safe_merge_no_duplicates(
         keys : 'list[str]',
         on : str = None,
         left_on : str = None,
-        right_on : str = None
+        right_on : str = None,
+        warn = False,
 ) :
     """
     Always perform left merge, aimed for 1:1 or m:1 merges. (error if duplicating or removing lines).
@@ -151,10 +152,10 @@ def safe_merge_no_duplicates(
         if key not in left.columns : 
             keys_to_merge.append(key)
         else :
-            warnings.warn(f"{key} already in left dataframe columns, {key} was removed from columns to merge.")
+            if warn : warnings.warn(f"{key} already in left dataframe columns, {key} was removed from columns to merge.")
 
     if len(keys_to_merge) == 0 : 
-        warnings.warn("No column to merge.")
+        if warn : warnings.warn("No column to merge.")
         return left
     
     check_len = len(left)
