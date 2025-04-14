@@ -30,7 +30,7 @@ number of single molecule per plane and 'volume' of plane (pixels) then we compu
     Hopefully, **the distribution of random variables following normal law also follow normal law** and we can compute its mean and std.
     (from propertis of gaussan and linear combinations)
     Mean is the mean of each individual distribution (knowing volume and abudancies) (law of total expectation)
-    Std is the sum of squared variance divided by N squared.
+    Std is the sum of squared variance(or std ???) divided by N squared.
     
     From this new normal distribution we can use usual statistical tests.
 
@@ -331,6 +331,7 @@ def _compute_cell_coloc_rate_expectancy(
     assert len(Cell_df) == check_len, "error in line conservation when merging cell area with cell density on cell_id"
     
     Cell_df['equivalent_abundancy'] = Cell_df['cell_area'] * Cell_df['spot_per_plane']
+    
     coloc_expectancy = Cell_df.apply(
         lambda x: compute_colocalization_probability(
             V= x['cell_area'],
@@ -399,7 +400,63 @@ def normalise_coloc_rate(
     
 """
 3. Statistical test (p-value) VS Null-model
+
+We already created function for mean computation in a distribution -> `_compute_coloc_rate_expectancy`. But we want the equivalent with standard deviation.
+
 """
+
+def _compute_cell_distribution_populations(
+        Spots : pd.DataFrame,
+) :
+    Cell_spots_count : pd.DataFrame = Spots.groupby(['cell_id','target'], as_index=False)['spot_id'].count().rename('abundancy')
+
+    return Cell_spots_count
+
+def compute_cell_distribution_std(
+    Cell_spot_density : pd.DataFrame,
+    Cell_area : pd.DataFrame,
+    Cell_distribution_populations : pd.DataFrame,
+    ):
+    """
+    Compute expected standard deviation for cells (for each cell computes std according to its Volume and abundancies)
+    """
+
+    
+    check_len = len(Cell_spot_density)
+    Cell_df = pd.merge(
+        Cell_spot_density.reset_index(level=0, drop=False), #cell_id is on axis 0 level 1 for left and axis 0 level 0 for right so reset put target back in columns
+        Cell_area,
+        on='cell_id', 
+        left_index=True,
+        right_index=True
+    )
+    assert len(Cell_df) == check_len, "error in line conservation when merging cell area with cell density on cell_id"
+    Cell_df['a1_equivalent_abundancy'] = Cell_df['cell_area'] * Cell_df['spot_per_plane']
+    
+    Cell_distribution_populations = Cell_distribution_populations.reset_index(drop=True, level=0) #Drop target info as it is in Cell_df already
+
+    Cell_df = pd.merge(
+        Cell_df,
+        Cell_distribution_populations,
+        on='cell_id',
+        left_index=True,
+        right_index=True,
+    )
+
+    cell_coloc_standard_deviation = Cell_df.apply(
+        lambda x: compute_colocalization_count_std(
+            a1_unique= x['equivalent_abundancy'],
+            a2= x['abundancy'],
+            V= x['cell_area'],
+        ), axis= 1 # strangely for axis=0 x is column and for axis = 1 x is lines
+        )
+
+    return pd.DataFrame(cell_coloc_standard_deviation.rename("cell_coloc_events_standard_deviation"))
+
+def compute_distributions_models(
+        cell_coloc_expectancy : pd.DataFrame
+) : 
+    pass
 
 """
 4. Higher dimension co-localization tests

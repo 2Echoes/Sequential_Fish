@@ -65,12 +65,12 @@ def compute_colocalization_probability(a1_unique,V) :
 def compute_colocalization_count_std(a1_unique, a2, V) :
     """
     Compute standard deviation of expected number of colocalization events which corresponds to a binomial law of sucess probability of a2 picking a position occupied by the a1_unique particules amongst V positions.
-    Std = np(1-p)
+    Var = np(1-p)
     """
     
     if V == 0 : return np.NaN #No positions available.
     
-    std = a2 * a1_unique/V * (1-a1_unique/V)
+    std = np.sqrt(a2 * a1_unique/V * (1-a1_unique/V))
     
     return std
 
