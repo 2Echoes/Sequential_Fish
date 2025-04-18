@@ -154,28 +154,77 @@ N^{(i,j)}_{uniquepos} = v(1-(1-\frac{1}{v})^{k_j})(1-(1-\frac{1}{v})^{k_i})
     as $N^c_{uniquepos} = v\prod_{i \in c}(1-(1-\frac{1}{v})^{k_i})$.
 \end{itemize}
 
-\subsubsection{Standard deviation of unique positions number occupied by a pair (i,j)}
-The number of different positions occupied by pairs $(i,j)$, $N^{(i,j)}_{uniquepos}$, is actually expectancy of the sum of \textbf{dependent} random variables
-$I(m) \forall m \in V$. Let us call $U(i,j)$ the random variable describing this.
+\subsection{Generalisation to n distributions}
+
+Let us consider n distributions : $i_1, i_2, ..., i_n$. What is the probality that any combination of single molecule $c$ to be found in an unique position $m$?
+Under the assomption of randomess, any distribution $i$ is independent from other distributions, thus the probability to find $i_1$ and $i_2$ at any given
+location is the product of the probabilities of distributions to localize at this location.
+
 \[
-U(i,j) = \sum_{m \in \mathbb{J}}I(m)
+p(c) = \prod_{i \in c}p(i)
 \]
+with 
 \[
-N^{(i,j)}_{uniquepos} = E(U(i,j))
+\hspace{2cm} p(i) = 1-(1-\frac{1}{v})^{k_i} \hspace{2cm} \textbf{(i)}
 \]
 
-We already determined the expectancy of the random variable $U$ in above subsection. To fully define the probability density of U
-let us find its standard deviation. The sum of random variables follows the law of \textbf{total variance} :
+Again to know how many different positions contains a combination of single molecule $c$, we define the observation variable $I$.
 \[
-Var(U(i,j)) = \sum_{m \in \mathbb{J}}Var(I_m) + 2.\sum_{(l,m) \in \mathbb{J^2}}Cov(I_m,I_l)
+\forall m \in V, I_c(m) = \begin{cases}
+    0 \text{ if } X^c_m = 0 \\
+    1 \text{ if } X^c_m \geq 1
+\end{cases}
+\text{which defines a Bernoulli law.}\linebreak
 \]
-To simply calculus, let us break it into 2 parts :
+We define $U(c)$ the number of combination $c$ found in the volume $V$ :
 \[
-S = \sum_{m \in \mathbb{J}}Var(I_m)
+U(c) = \sum_{m \in V}I_c(m)
 \]
+The expectancy of $U$, $E(U(c))$ :
 \[
-C = \sum_{(l,m) \in \mathbb{J^2}}Cov(I_m,I_l)
+E(U(c)) = 
 \]
+
+
+% \subsubsection{Standard deviation of unique positions number occupied by a pair (i,j)}
+% The number of different positions occupied by pairs $(i,j)$, $N^{(i,j)}_{uniquepos}$, is actually expectancy of the sum of \textbf{dependent} random variables
+% $I(m) \forall m \in V$. Let us call $U(i,j)$ the random variable describing this.
+% \[
+% U(i,j) = \sum_{m \in \mathbb{J}}I(m) = \sum_{m \in \mathbb{J}}I_i(m)I_j(m)
+% \]
+% \[
+% N^{(i,j)}_{uniquepos} = E(U(i,j))
+% \]
+
+% We already determined the expectancy of the random variable $U$ in above subsection. To fully define the probability density of U
+% let us find its standard deviation. The sum of random variables follows the law of \textbf{total variance} :
+% \[
+% Var(U(i,j)) = \sum_{m \in \mathbb{J}}Var(I(m)) + 2.\sum_{(l,m) \in \mathbb{J^2}}Cov(I(m),I(l))
+% \]
+% To simply calculus, let us break it into 2 parts :
+% \[
+% S = \sum_{m \in \mathbb{J}}Var(I(m))
+% \]
+% \[
+% C = \sum_{(l,m) \in \mathbb{J^2}}Cov(I(m),I(l))
+% \]
+% Let us start with calculation of $S$ term. $I(m)$ follows a Bernoulli law of sucess probability $p = (1-(1-\frac{1}{v})^k)$ and variance :
+% \[
+% Var(I_m) = p(1-p)
+% \]
+% \[
+% Var(I_m) = (1-(1-\frac{1}{v})^k) (1-(1-(1-\frac{1}{v})^k))
+% \]
+% \[
+% Var(I_m) = (1-\frac{1}{v})^k - (1-\frac{1}{v})^{2k}
+% \]
+% Then :
+% \[
+% S = \sum_{m \in \mathbb{J}}Var(I_m) = N^j_{uniquepos}[(1-\frac{1}{v})^k - (1-\frac{1}{v})^{2k}]
+% \]
+
+% Let's move on to the \textbf{covariant} part of the total variance, but before, let us consider why $U(i,j)$ does not follow an independent distribution.
+
 %\section{Correction for non-perfect co-localization}
 
 %\section{Statistics and p-values}

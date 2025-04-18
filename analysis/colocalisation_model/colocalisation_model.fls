@@ -1,9 +1,9 @@
-PWD /home/floric/miniconda3/envs/dev/lib/python3.8/site-packages/Sequential_Fish/analysis/notes
+PWD /home/floric/miniconda3/envs/dev/lib/python3.8/site-packages/Sequential_Fish/analysis/colocalisation_model
 INPUT /etc/texmf/web2c/texmf.cnf
 INPUT /usr/share/texmf/web2c/texmf.cnf
 INPUT /usr/share/texlive/texmf-dist/web2c/texmf.cnf
 INPUT /var/lib/texmf/web2c/pdftex/pdflatex.fmt
-INPUT /home/floric/miniconda3/envs/dev/lib/python3.8/site-packages/Sequential_Fish/analysis/notes/colocalisation_model.tex
+INPUT /home/floric/miniconda3/envs/dev/lib/python3.8/site-packages/Sequential_Fish/analysis/colocalisation_model/colocalisation_model.tex
 OUTPUT colocalisation_model.log
 INPUT /usr/share/texlive/texmf-dist/tex/latex/base/article.cls
 INPUT /usr/share/texlive/texmf-dist/tex/latex/base/article.cls
@@ -113,5 +113,4 @@ INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb
 INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb
 INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb
 INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb
-INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm5.pfb
 INPUT /usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm7.pfb
