@@ -1,4 +1,4 @@
-
+frameon = True
 FILTER_RNA = ['POLR2B_20']
 
 RENAME_RULE = {
@@ -21,3 +21,7 @@ distribution_measures = [
 min_diversity = 3
 min_spots_number = 3
 cluster_radius = 400 #nm
+
+#Co-localization analysis
+coloc_distance = 400 #nm
+coloc_significance=1e-4

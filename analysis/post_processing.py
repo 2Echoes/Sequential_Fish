@@ -42,12 +42,12 @@ def Spots_filtering(
         
     return Spots
 
-def RNA_filtering(df_with_target : pd.DataFrame) :
+def RNA_filtering(df_with_target : pd.DataFrame, rna_to_filter : 'list[str]' = FILTER_RNA) :
     
     if 'target' not in df_with_target : raise KeyError('"target" column was not found in dataframe columns.')
     
     df_with_target = df_with_target.drop(
-        df_with_target[df_with_target['target'].isin(FILTER_RNA)].index,
+        df_with_target[df_with_target['target'].isin(rna_to_filter)].index,
         axis=0
     )
     

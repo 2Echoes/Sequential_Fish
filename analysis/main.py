@@ -8,7 +8,7 @@ from .density import density_analysis
 from .distributions import distributions_analysis
 from ..run_saves import select_path
 
-ANALYSIS_MODULES = ['all','distributions' ,'density', 'pipeline_metrics']
+ANALYSIS_MODULES = ['all','distributions' ,'density', 'pipeline_metrics', 'pair-colocalization', 'colocalization']
 
 def run(*args) :
     
@@ -31,7 +31,7 @@ def run(*args) :
     unfiltered_Spots = Spots.copy()
     
     #Rename target
-    from .analysis_parameters import RENAME_RULE
+    from .analysis_parameters import RENAME_RULE, frameon
     Gene_map["target"] = Gene_map['target'].replace(RENAME_RULE)
     
     Spots = Spots_filtering(
@@ -101,4 +101,31 @@ def run(*args) :
         )
         if not drift_sucess :
             print("Error raised during Drift analysis. Please check log in ~analysis/pipeline_metrics/ folder.")
+
+    any_paircoloc = any((
+        'coloc' in args,
+        'colocalisation' in args,
+        'colocalization' in args,
+        'pair' in args,
+        'pair-colocalisation' in args,
+        'pair-colocalization' in args,
         
+    ))
+    if any_paircoloc or "all" in args:
+        from .colocalisation import main as coloc_main
+        from .analysis_parameters import coloc_distance, coloc_significance
+        
+        coloc_sucess = coloc_main(
+            filtered_Spots=Spots,
+            Cell=Cell,
+            Acquisition=Acquisition,
+            Detection=Detection,
+            Gene_map=Gene_map,
+            colocalisation_distance=coloc_distance,
+            run_path=run_path,
+            significance= coloc_significance,
+            frameon=frameon
+        )
+
+        if not coloc_sucess :
+            print(f"Error raised during coloc analysis. Please check log in ~analysis/co_localization/")
