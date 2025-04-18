@@ -52,7 +52,7 @@ def create_run_dataframe() :
             run_dataframe[para.upper()] = pd.Series([],dtype=object)
 
     for script in PIPELINE_SCRIPTS :
-        run_dataframe[script] = pd.Series([]).astype(bool)
+        run_dataframe[script] = pd.Series([],dtype=bool)
 
     return run_dataframe
 
