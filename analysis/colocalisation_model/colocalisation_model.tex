@@ -1,18 +1,18 @@
-\documentclass{article}  % Specifies the document class
+\documentclass{article}
 
-\usepackage{amsmath}     % Import package for advanced math (optional)
-\usepackage{amssymb}     % Import package for advanced math (optional)
-\usepackage{graphicx}    % Import package for graphics (optional)
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
 
-\title{Probabilistic model of random co-colocalization in a cell}  % Title of the document
-\author{}      % Author's name
-\date{\today}           % Date (auto-generated)
+\title{Probabilistic model of random co-colocalization in a cell}
+\author{}
+\date{\today}
 
-\begin{document}        % Start of the document
+\begin{document}
 
-\maketitle              % Generates title
+\maketitle
 
-\section{Aim}  % Section title
+\section{Aim}
 For biological studies purpose we image a cell in 3D using fluorescent microscopy and we are interested in quantifying the 
 interactions between different types of single molecules. From those images we have no means of quantifying directly the interaction
 between single molecules, instead we want to see how frequently they localize together in space. Our goal is to build a general model
@@ -32,6 +32,7 @@ voxel.
 We note \textit{C(i,j)} a \textbf{co-localization} event between two single molecules of distribution \textit{i} and \textit(j)
 when a single molecule from distribution \textit{i} occupy the same voxel as a single molecule from distribution \textit{j}.
 
+\newpage
 \section{Probabilistic model}
 
 \subsection{Presentation}
@@ -72,7 +73,7 @@ The expected number of \textbf{different} positions $ N^{unique}_{pos} $ drawn i
     N_{uniquepos} = \sum_{m \in V}p(X_m = 0).0 + p(X_m \geq 1).1
 \]
 
-\[
+\[\label{ii}
     N_{uniquepos} = v(1-(1-\frac{1}{v})^k) \hspace{2cm} (\textbf{ii})
 \]
 The expected number of different positions drawn is, in other words, the expected number of draws \textbf{that discovered a new position}.
@@ -88,11 +89,12 @@ p_{self colocalization} = 1 - \frac{v}{k}(1-(1-\frac{1}{v})^k)
 \textit{\textbf{Notes:}}
 \begin{itemize}
     \item This is true for any distribution \textit{I} of single molecule \textit{i} of abundancy $ k_i $ (i.e. number of single molecule).
-    \item $ N_{selfcolocalization} $ is the expectancy $E$ of a bionomial law of sucess probability $p = p_{selfcolocalization}$ 
-    \item Standard deviation of the expected count of self co-localization can be computed as $ np(1-p) $ (bionomial law)
 \end{itemize}
 
 
+
+
+\newpage
 \subsection{2 distributions and co-localization probability}
 We now consider positions assignement of a second distribution \textit{I} of abundancy $ k_i $ after the assignement of a first 
 distribution \textit{J} of abundancy $ k_j $ with $ I \neq J $. The number of unique positions \textit{J} occupy can be estimated with
@@ -154,6 +156,64 @@ N^{(i,j)}_{uniquepos} = v(1-(1-\frac{1}{v})^{k_j})(1-(1-\frac{1}{v})^{k_i})
     as $N^c_{uniquepos} = v\prod_{i \in c}(1-(1-\frac{1}{v})^{k_i})$.
 \end{itemize}
 
+
+
+\newpage
+\subsection{2 distributions and standard deviation}
+
+We have determined expectancies above but in order to perform relevant statistics we need to find standard deviation of our random variables.
+
+\subsubsection{Co-localization probability standard deviation}
+
+In above section we argue that co-localization events $C(i,j)$ follows a bionomial distribution of sucess probability $ p = p(X \in \mathbb{J})$.
+This reasoning is exact when considering expectancies but inexact when considering standard deviation. Indeed it is exact only if the
+distribution of singles $j$ is fixed but we would like to extend it for $i$ and $j$ following, indivudally, random distributions, as described in section
+3.2. To do so the calculus of variance for $C(i,j)$ should take into consideration the variance of $N^j_{uniquepos}$ and use the law of total variance,
+which states :
+\[
+Var(C(i,j)) = E[Var(C|N^j_{uniquepos})] + Var(E[C|N^j_{uniquepos}])
+\] 
+$Var(C|N^j_{uniquepos})$ is the case where distribution $j$ is fixed and standard deviation can be deduced from bionomial law \textbf{(iii)} :
+
+\[
+    Var(C|N^j_{uniquepos}) = np(1-p) = k_i \frac{N^j_{uniquepos}}{v}(1-\frac{N^j_{uniquepos}}{v})
+\]
+\[
+    E[Var(C|N^j_{uniquepos})] = k_i(1-(1-\frac{1}{v})^{k_i})(1-\frac{1}{v})^{k_i}
+\]
+
+\subsubsection{Dependency of any distribution within the volume}
+
+Although, distributions $i_i$ are independent, $X^c_m$ and $X^c_l$ are \textbf{not independent} which means we can't consider the sum of $I_c(m)$ as a
+bionomial distribution. To understand this let us consider the probability that a single molecule $i$ is found at voxel $m$ and at voxel $l \neq m$.
+We use well known inclusion-exclusion principle.
+\[
+P(X_m \geq 1 \cap X_l \geq 1) = P(X_m \geq 1) + P(X_l \geq 1) - P(X_m\geq 1 \cup X_l\geq 1)
+\]
+\[
+P(X_m \geq 1 \cap X_l \geq 1) = 2p(i) - P(X_m\geq 1 \cup X_l\geq 1)
+\]
+The probability that a single molecule localize at $l$ or $m$ is the chance to draw one of 2 voxels out of the volume $V$.
+\[
+P(m \cup l) = \frac{2}{v}
+\]
+Thus from:
+\[
+P({X_m\geq 1 \cup X_l\geq 1}) = 1 - (1-\frac{2}{v})^{k_i} 
+\]
+We can already conclude $X_m$ and $X_l$ are not independent since their intersection is non null, it also hilights that the dependency is made through
+the volume of voxels. \newline
+\linebreak
+\textbf{Conclusion : }All disitributions \textbf{are} independent from each other, but the occupancy of a voxel \textbf{is not} independent of the
+occupancy of other voxels. This result is important for the computation of variance for the occupancy of voxel, for single molecules or any combination
+single molecules since it means we must introduce a covariance term.
+
+
+
+
+
+
+
 \subsection{Generalisation to n distributions}
 
 Let us consider n distributions : $i_1, i_2, ..., i_n$. What is the probality that any combination of single molecule $c$ to be found in an unique position $m$?
@@ -174,15 +234,6 @@ Again to know how many different positions contains a combination of single mole
     0 \text{ if } X^c_m = 0 \\
     1 \text{ if } X^c_m \geq 1
 \end{cases}
-\text{which defines a Bernoulli law.}\linebreak
-\]
-We define $U(c)$ the number of combination $c$ found in the volume $V$ :
-\[
-U(c) = \sum_{m \in V}I_c(m)
-\]
-The expectancy of $U$, $E(U(c))$ :
-\[
-E(U(c)) = 
 \]
 
 
