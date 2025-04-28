@@ -12,6 +12,11 @@
 
 \maketitle
 
+
+
+
+
+
 \section{Aim}
 For biological studies purpose we image a cell in 3D using fluorescent microscopy and we are interested in quantifying the 
 interactions between different types of single molecules. From those images we have no means of quantifying directly the interaction
@@ -23,6 +28,17 @@ a single molecule from distribution \textit{j} in a cell of volume \textit{V} \t
 Our images are produced through a sequential fish microscope in fixed cells that divides, according to its resolution cells in a set of
 \textit{v} voxels localized with their set of coordinates \textit{(z,y,x)} in the volume \textit{V}. 
 
+
+
+
+
+
+
+
+
+
+
+
 \section{Co-localization events}
 \subsection{Self co-localization event}
 We note \textit{C(i,i)} a \textbf{self co-localization} event between two single molecules of distribution \textit{i} occupy the same
@@ -32,6 +48,21 @@ voxel.
 We note \textit{C(i,j)} a \textbf{co-localization} event between two single molecules of distribution \textit{i} and \textit(j)
 when a single molecule from distribution \textit{i} occupy the same voxel as a single molecule from distribution \textit{j}.
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 \newpage
 \section{Probabilistic model}
 
@@ -40,8 +71,10 @@ The process of assigning a position to single molecules amongst the v possible p
 positions are uniquely numbered balls placed in an urn. Assigning coordinates to a single molecule is drawing a ball in the urn,
 before each drawn balls are replaced in the urn.
 
-\subsection{Unique distribution and self co-localization}
+\subsection{Unique distribution}
 To begin, let us consider a system containing a unique distribution \textbf{I} of single molecules randomly placed amongst the v positions of the cell.
+
+\subsubsection{self co-localization probability}
 The probability that a specific single molecule \textit{i} is found at position \textit{m} is the probability to draw the ball numbered
 \textit{m}:
 
@@ -54,12 +87,12 @@ Then the probability to not draw the specific location \textit{m} is :
 \]
 After \textit{k} draws, the probability to never draw a the specific location \textit{m} follows a bionomial law and is :
 \[
-p_k(X_m = 0) = (1 - \frac{1}{v})^k \hspace{2cm} k \in \mathbb{N}
+p_k(X_m = 0) = (1 - \frac{1}{v})^k \hspace{2cm} k \in \mathbb{N^*}
 \]
 On the contrary the probability that the location \textit{m} was drawn at least once is :
-\[
-p_k(X_m \geq 1) = 1-(1 - \frac{1}{v})^k \hspace{2cm} (\textbf{i})
-\]
+\begin{equation}
+p_k(X_m \geq 1) = 1-(1 - \frac{1}{v})^k
+\end{equation}
 To study self co-localization we are interested to know how many different positions have been drawn in k-trials. To do so let us 
 define the observation variable $ \epsilon $.
 \[
@@ -73,9 +106,12 @@ The expected number of \textbf{different} positions $ N^{unique}_{pos} $ drawn i
     N_{uniquepos} = \sum_{m \in V}p(X_m = 0).0 + p(X_m \geq 1).1
 \]
 
-\[\label{ii}
-    N_{uniquepos} = v(1-(1-\frac{1}{v})^k) \hspace{2cm} (\textbf{ii})
-\]
+\begin{equation}
+    \begin{split}
+    N_{uniquepos} = \mu_{up} = v(1-(1-\frac{1}{v})^k) \\
+    \end{split}
+\end{equation}
+Where $\mu_{up}$ is the mean number of occupied position.
 The expected number of different positions drawn is, in other words, the expected number of draws \textbf{that discovered a new position}.
 To adress self co-localization probability we are interested to know the number of draws that \textbf{didn't} discover a new position,
 in other words, duplicates draws or \textbf{self co-localization events}. To do so, we remove from the total number of picks (k) the
@@ -83,22 +119,99 @@ number of picks that discover a new position.
 \[
 N_{self colocalization} = k - v(1-(1-\frac{1}{v})^k)
 \]
-\[
-p_{self colocalization} = 1 - \frac{v}{k}(1-(1-\frac{1}{v})^k)
-\]
+\begin{equation}
+p_{self colocalization} = \mu_{sc} = \frac{N_{self colocalization}}{k} = 1 - \frac{v}{k}(1-(1-\frac{1}{v})^k)
+\end{equation}
 \textit{\textbf{Notes:}}
 \begin{itemize}
     \item This is true for any distribution \textit{I} of single molecule \textit{i} of abundancy $ k_i $ (i.e. number of single molecule).
+    \item If $k = 1$, $p_{self colocalization} = 0$
 \end{itemize}
 
+\subsubsection{Dependency of any distribution within the volume}
+
+Although, distributions $i_i$ are independent from each other, $X_m$ and $X_l$ are \textbf{not independent} which means we can't consider the sum of $I(m)$ as a
+bionomial distribution. To understand this let us consider the probability that a single molecule $i$ is found at voxel $m$ and at voxel $l \neq m$.
+We use well known inclusion-exclusion principle.
+\[
+P(X_m \geq 1 \cap X_l \geq 1) = P(X_m \geq 1) + P(X_l \geq 1) - P(X_m\geq 1 \cup X_l\geq 1)
+\]
+\[
+P(X_m \geq 1 \cap X_l \geq 1) = 2p(X \geq 1) - P(X_m\geq 1 \cup X_l\geq 1)
+\]
+The probability that a single molecule localize at $l$ or $m$ is the chance to draw one of 2 voxels out of the volume $V$.
+\[
+P(m \cup l) = \frac{2}{v}
+\]
+Thus from:
+\[
+P({X_m\geq 1 \cup X_l\geq 1}) = 1 - (1-\frac{2}{v})^{k}
+\]
+We can already conclude $X_m$ and $X_l$ are not independent since their intersection is non null, it also hilights that the dependency is made through
+the volume of voxels. To conclude calculus using above and \textbf{(1)} :
+\begin{equation}
+    P(X_m \geq 1 \cap X_l \geq 1) =  1 - 2(1-\frac{1}{v})^{k} + (1-\frac{2}{v})^{k} 
+\end{equation}
+\textbf{Conclusion : }All disitributions \textbf{are} independent from each other, but the occupancy of a voxel \textbf{is not} independent of the
+occupancy of other voxels. This result is important for the computation of variance for the occupancy of voxel, since it means we must introduce a 
+covariance term when summing up variables over voxels.
+
+\subsubsection{Covariance between $I_m$ and $I_l$}
+
+Covariance is defined as :
+\[
+Cov(I_m;I_l) = E(I_m \cap I_l) - E(I_m)E(I_l)
+\]
+where $E(I_m \cap I_l)$ is the expectancy that positions $m$ \textbf{and} $l$ were drawn at least once in k draws. Let us start with left term  and 
+using \textbf{(4)}:
+\[
+E(I_m \cap I_l) = P(X_m \geq 1 \cap X_l \geq 1).1 = 1 - 2(1-\frac{1}{v})^{k} + (1-\frac{2}{v})^{k}
+\]
+For right term we have $E(I_m) = E(I_l) = E(I)$ :
+\[
+E(I) = P(X\geq1).1 = 1-(1 - \frac{1}{v})^k
+\]
+Finally :
+\[
+Cov(I_m;I_l) =  1 + (1-\frac{2}{v})^{k} - 2(1-\frac{1}{v})^{k} - [1-(1 - \frac{1}{v})^k]^2
+\]
+After simplification :
+\begin{equation}
+    Cov(I_m;I_l) = (1-\frac{2}{v})^k - (1-\frac{1}{v})^{2k}
+\end{equation}
+
+\subsubsection{Standard deviation}
+To fully determine the probability density of voxel occupancy, let us find its standard deviation. We are computing the variance from the sum of dependent variables
+thus we have to use the law of total variance in its covariant form :
+\[
+Var(N_{up}) = \sum_{m \in \mathbb{J}} Var(I_m) +  2\sum_{m < l }Cov(I_m;I_l)
+\]
+Where $\sum_{m<l}$ means we sum on all different \textbf{unordered} pairs for $m \neq l \in \mathbb{J}^2$.\newline
+$I_m$ is a Bernoulli event of variance $p(1-p)$ :
+\[
+Var(I_m) = (1-(1-\frac{1}{v})^k)(1-\frac{1}{v})^k
+\]
+The number of unordered $(m,l)$ pairs for $l \neq m$ is the number of pairs of voxel we can fit in the $v$ voxels : 
+\[
+    2\sum_{m < l }Cov(I_m;I_l) = 2\binom{v}{2}Cov(I_m;I_l) = 2\frac{v(v-1)}{2}Cov 
+\]
+
+So total variance is :
+\[
+    \sigma^2_{up} = v[1-(1-\frac{1}{v})^k](1-\frac{1}{v})^k + v(v-1)[(1-\frac{2}{v})^k - (1-\frac{1}{v})^{2k}]
+\]
+And standard deviation :
+\begin{equation}
+    \sigma_{up} = \sqrt{v[1-(1-\frac{1}{v})^k](1-\frac{1}{v})^k + v(v-1)[(1-\frac{2}{v})^k - (1-\frac{1}{v})^{2k}]}
+\end{equation}
 
 
 
 \newpage
-\subsection{2 distributions and co-localization probability}
+\subsection{Two distributions}
 We now consider positions assignement of a second distribution \textit{I} of abundancy $ k_i $ after the assignement of a first 
 distribution \textit{J} of abundancy $ k_j $ with $ I \neq J $. The number of unique positions \textit{J} occupy can be estimated with
-\textbf{(ii)}.
+\textbf{(2)}.
 \[
 N^j_{uniquepos} = v(1-(1-\frac{1}{v})^{k_j})
 \]
@@ -113,107 +226,110 @@ probability to draw a red ball.
 Drawing ball in the urn is a sequence of independent and uniformly random events. The probability of picking one of the $N^j_{uniquepos}$ red ball amongst the $v$
 balls is :
 \[
-p(X\in \mathbb{J}) = \frac{N^j_{uniquepos}}{v}
+p(X\in \mathbb{J}) = \frac{N^j_{up}}{v}
 \] 
-where $\mathbb{J}$  is the set of positions drawn for the J distribution.
-Again co-localization events follow a bionomial process of sucess probability $p = p(X\in \mathbb{J})$. This co-localization probability
-can also be interpreted as the co-localization rate of molecules $i$ with molecules $j$.
+where $\mathbb{J}$  is the set of positions drawn for the $J$ distribution.
+If we consider distribution $J$ as fixed, co-localization events exactly follow a bionomial of parameters $(p(X\in\mathbb{J}),k_i)$. However, to consider a
+more generalistic model, let us consider a distribution distribution $J$ of know abundancy $k_j$ with mean number of unique positions occupied following a
+normal law $N(\mu_{sc}, \sigma_{sc})$. In such a case we use the law of total expectation :
+\[
+\mu_{Cij} = E(E(C(i,j) | J))
+\]
+$E(C(i,j) | J)$ is the expectancy from the bionomial law mentioned above.
 
-We can deduce the expectancy and standard deviation of co-localization events :
 \[
-    \hspace{3cm}E(C(i,i)) = k_i\frac{N^j_{uniquepos}}{v} \hspace{3cm} \textbf{(iii)}
+\rightarrow E(k_i\frac{N^j_{up}}{v}) = \frac{k_i}{v}E(N^j_{up})
 \]
-\[
-std(C(i,j)) = k_i\frac{N^j_{uniquepos}}{v}(1-\frac{N^j_{uniquepos}}{v})
-\]
+
+\begin{equation}
+    \mu_{Cij} = \frac{k_i}(1-(1-\frac{1}{v})^{k_j})
+\end{equation}
 
 \textit{\textbf{Notes:}}
 \begin{itemize}
-    \item $E(C(i,j) \neq C(j,i))$
+    \item $\mu_{Cij} \neq \mu_{Cji}$
 \end{itemize}
 
-\subsubsection{Number of unique positions occupied by a pair (i,j)}
+\subsubsection{Co-localization probability standard deviation}
+
+Similarly to previous paragraph, let us find the standard deviation for number of co-localization events when considering $J$ not fixed. 
+To do so the calculus of variance should take into consideration the variance of $N^j_{uniquepos}$ and use the law of total variance,
+which states :
+\[
+Var(C(i,j)) = E[Var(C|J)] + Var(E[C|J])
+\] 
+$C|J$ is the case where distribution $J$ is fixed and co-localization events follow bionomial law (\S3.3.1) :
+
+\[
+    Var(C|J) = np(1-p) = k_i \frac{N^j_{uniquepos}}{v}(1-\frac{N^j_{uniquepos}}{v})
+\]
+\[
+    E(C|J) = k_i \frac{N^j_{uniquepos}}{v}
+\]
+Now let us consider the first term with notation $N_j = N^j_{uniquepos}$
+\[
+    \begin{split}
+    E[Var(C|J)] &= E(k_i \frac{N_j}{v}(1-\frac{N_j}{v})) \\
+    &= \frac{k_i}{v}E(N_j - \frac{N^2_j}{v}) \\
+    &= \frac{k_i}{v}[E(N_j) - \frac{E(N^2_j)}{v}] \\
+    &= \frac{k_i}{v}(\mu^j_{up} - \frac{\sigma^2_{up} + \mu^2_{up}}{v})
+\end{split}
+\]
+Using $Var(X) = E(X^2) - E^2(x)$.\newline
+The other term is straightforward : 
+\[
+Var(E(C|J)) = k_i\frac{\sigma^{2_j}_{up}}{v}
+\]
+Total variance is :
+\[
+    \sigma^2_{Cij} = \frac{k_i}{v}(\mu^j_{up} - \frac{\sigma^2_{up} + \mu^2_{up}}{v}) + k_i\frac{\sigma^{2_j}_{up}}{v}
+\]
+With $\mu^j_{up}$ and $\sigma^j_{up}$ defined in equations \textbf{(2)} and \textbf{(6)}.\newline
+In conclusion we can write the standard deviation of the number of co-localization events as :
+\begin{equation}
+    \sigma_{Cij} = \sqrt{\frac{k_i}{v}(\mu^j_{up} - \frac{\sigma^2_{up} + \mu^2_{up}}{v}) + k_i\frac{\sigma^{2_j}_{up}}{v}}
+\end{equation}
+
+
+
+
+\subsubsection{Voxel occupancy by a pair (i,j)}
 In section 3.1 we deduced the probability that a specific location $m$ to be drawn at least once  in $k$ draws as :
 \[
-p_k(X_m \geq 1) = 1-(1 - \frac{1}{v})^k \hspace{2cm} (\textbf{i})
+    \hspace{2cm} p_k(X_m \geq 1) = 1-(1 - \frac{1}{v})^k \hspace{2cm} \textbf{(1)}
 \]
 To know how many red balls have been drawn at least once (\textbf{i.e. number of unique pair (i,j)}) let us use again the observation
 variable $I$.
 \[
-N^{(i,j)}_{uniquepos} = \sum_{m \in \mathbb{J}}p(X_m \geq 1).1 + 0. \textbf{ ...}
+\mu^{(i,j)}_{uniquepos} = \sum_{m \in \mathbb{J}}p(X_m \geq 1).1 + 0. \textbf{ ...}
 \]
+\begin{equation}
+\mu^{(i,j)}_{up} = N^j_{up}(1-(1-\frac{1}{v})^{k_i})
+\end{equation}
+or for $J$ not fixed:
 \[
-\hspace{2cm} N^{(i,j)}_{uniquepos} = N^j_{uniquepos}(1-(1-\frac{1}{v})^{k_i}) \hspace{2cm} \textbf{(iv)}
-\]
-or :
-\[
-N^{(i,j)}_{uniquepos} = v(1-(1-\frac{1}{v})^{k_j})(1-(1-\frac{1}{v})^{k_i})
+\mu^{(i,j)}_{up} = v(1-(1-\frac{1}{v})^{k_j})(1-(1-\frac{1}{v})^{k_i})
 \]
 \textit{\textbf{Notes:}}
 \begin{itemize}
-    \item Though $E(C(i,j)) \neq E(C(j,i))$, explicit writting in last equation shows that $N^{(i,j)}_{uniquepos} = N^{(j,i)}_{uniquepos}$.
+    \item Though $\mu_{Cij} \neq \mu_{Cji}$, explicit writting in last equation shows that \newline 
+    $\mu^{(i,j)}_{up} = \mu^{(j,i)}_{up}$.
     \item Last equation also seems to show it will be easy to generalise the count of unique position occupied by any combination of molecules $c$ of dimension $n$
-    as $N^c_{uniquepos} = v\prod_{i \in c}(1-(1-\frac{1}{v})^{k_i})$.
+    as $N^c_{uniquepos} = v\prod_{i \in c}\mu_c$.
 \end{itemize}
 
 
 
-\newpage
-\subsection{2 distributions and standard deviation}
+
+\subsubsection{Voxel occupancy by a pair (i,j) - Standard deviation}
 
 We have determined expectancies above but in order to perform relevant statistics we need to find standard deviation of our random variables.
 
-\subsubsection{Co-localization probability standard deviation}
-
-In above section we argue that co-localization events $C(i,j)$ follows a bionomial distribution of sucess probability $ p = p(X \in \mathbb{J})$.
-This reasoning is exact when considering expectancies but inexact when considering standard deviation. Indeed it is exact only if the
-distribution of singles $j$ is fixed but we would like to extend it for $i$ and $j$ following, indivudally, random distributions, as described in section
-3.2. To do so the calculus of variance for $C(i,j)$ should take into consideration the variance of $N^j_{uniquepos}$ and use the law of total variance,
-which states :
-\[
-Var(C(i,j)) = E[Var(C|N^j_{uniquepos})] + Var(E[C|N^j_{uniquepos}])
-\] 
-$Var(C|N^j_{uniquepos})$ is the case where distribution $j$ is fixed and standard deviation can be deduced from bionomial law \textbf{(iii)} :
-
-\[
-    Var(C|N^j_{uniquepos}) = np(1-p) = k_i \frac{N^j_{uniquepos}}{v}(1-\frac{N^j_{uniquepos}}{v})
-\]
-\[
-    E[Var(C|N^j_{uniquepos})] = k_i(1-(1-\frac{1}{v})^{k_i})(1-\frac{1}{v})^{k_i}
-\]
-
-\subsubsection{Dependency of any distribution within the volume}
-
-Although, distributions $i_i$ are independent, $X^c_m$ and $X^c_l$ are \textbf{not independent} which means we can't consider the sum of $I_c(m)$ as a
-bionomial distribution. To understand this let us consider the probability that a single molecule $i$ is found at voxel $m$ and at voxel $l \neq m$.
-We use well known inclusion-exclusion principle.
-\[
-P(X_m \geq 1 \cap X_l \geq 1) = P(X_m \geq 1) + P(X_l \geq 1) - P(X_m\geq 1 \cup X_l\geq 1)
-\]
-\[
-P(X_m \geq 1 \cap X_l \geq 1) = 2p(i) - P(X_m\geq 1 \cup X_l\geq 1)
-\]
-The probability that a single molecule localize at $l$ or $m$ is the chance to draw one of 2 voxels out of the volume $V$.
-\[
-P(m \cup l) = \frac{2}{v}
-\]
-Thus from:
-\[
-P({X_m\geq 1 \cup X_l\geq 1}) = 1 - (1-\frac{2}{v})^{k_i} 
-\]
-We can already conclude $X_m$ and $X_l$ are not independent since their intersection is non null, it also hilights that the dependency is made through
-the volume of voxels. \newline
-\linebreak
-\textbf{Conclusion : }All disitributions \textbf{are} independent from each other, but the occupancy of a voxel \textbf{is not} independent of the
-occupancy of other voxels. This result is important for the computation of variance for the occupancy of voxel, for single molecules or any combination
-single molecules since it means we must introduce a covariance term.
 
 
 
 
-
-
-
+\newpage
 \subsection{Generalisation to n distributions}
 
 Let us consider n distributions : $i_1, i_2, ..., i_n$. What is the probality that any combination of single molecule $c$ to be found in an unique position $m$?
@@ -224,9 +340,9 @@ location is the product of the probabilities of distributions to localize at thi
 p(c) = \prod_{i \in c}p(i)
 \]
 with 
-\[
+\begin{equation}
 \hspace{2cm} p(i) = 1-(1-\frac{1}{v})^{k_i} \hspace{2cm} \textbf{(i)}
-\]
+\end{equation}
 
 Again to know how many different positions contains a combination of single molecule $c$, we define the observation variable $I$.
 \[
