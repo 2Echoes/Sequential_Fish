@@ -162,36 +162,36 @@ covariance term when summing up variables over voxels.
 
 Covariance is defined as :
 \[
-Cov(I_m;I_l) = E(I_m \cap I_l) - E(I_m)E(I_l)
+    Cov(\epsilon(m);\epsilon(l)) = E(\epsilon(m) \cap \epsilon(l)) - E(\epsilon(m))E(\epsilon(l))
 \]
-where $E(I_m \cap I_l)$ is the expectancy that positions $m$ \textbf{and} $l$ were drawn at least once in k draws. Let us start with left term  and 
+where $E(\epsilon(m) \cap \epsilon(l))$ is the expectancy that positions $m$ \textbf{and} $l$ were drawn at least once in k draws. Let us start with left term  and 
 using \textbf{(4)}:
 \[
-E(I_m \cap I_l) = P(X_m \geq 1 \cap X_l \geq 1).1 = 1 - 2(1-\frac{1}{v})^{k} + (1-\frac{2}{v})^{k}
+    E(\epsilon(m) \cap \epsilon(l)) = P(X_m \geq 1 \cap X_l \geq 1).1 = 1 - 2(1-\frac{1}{v})^{k} + (1-\frac{2}{v})^{k}
 \]
-For right term we have $E(I_m) = E(I_l) = E(I)$ :
+For right term we have $E(\epsilon(m)) = E(\epsilon(l)) = E(\epsilon)$ :
 \[
-E(I) = P(X\geq1).1 = 1-(1 - \frac{1}{v})^k
+E(\epsilon) = P(X\geq1).1 = 1-(1 - \frac{1}{v})^k
 \]
 Finally :
 \[
-Cov(I_m;I_l) =  1 + (1-\frac{2}{v})^{k} - 2(1-\frac{1}{v})^{k} - [1-(1 - \frac{1}{v})^k]^2
+    Cov(\epsilon(m);\epsilon(l)) =  1 + (1-\frac{2}{v})^{k} - 2(1-\frac{1}{v})^{k} - [1-(1 - \frac{1}{v})^k]^2
 \]
 After simplification :
 \begin{equation}
-    Cov(I_m;I_l) = (1-\frac{2}{v})^k - (1-\frac{1}{v})^{2k}
+    Cov(\epsilon(m);\epsilon(l)) = (1-\frac{2}{v})^k - (1-\frac{1}{v})^{2k}
 \end{equation}
 
 \subsubsection{Standard deviation}
 To fully determine the probability density of voxel occupancy, let us find its standard deviation. We are computing the variance from the sum of dependent variables
 thus we have to use the law of total variance in its covariant form :
 \[
-Var(N_{up}) = \sum_{m \in \mathbb{J}} Var(I_m) +  2\sum_{m < l }Cov(I_m;I_l)
+Var(N_{up}) = \sum_{m \in \mathbb{J}} Var(\epsilon(m)) +  2\sum_{m < l }Cov(\epsilon(m);\epsilon(l))
 \]
 Where $\sum_{m<l}$ means we sum on all different \textbf{unordered} pairs for $m \neq l \in \mathbb{J}^2$.\newline
 $I_m$ is a Bernoulli event of variance $p(1-p)$ :
 \[
-Var(I_m) = (1-(1-\frac{1}{v})^k)(1-\frac{1}{v})^k
+Var(\epsilon_m) = (1-(1-\frac{1}{v})^k)(1-\frac{1}{v})^k
 \]
 The number of unordered $(m,l)$ pairs for $l \neq m$ is the number of pairs of voxel we can fit in the $v$ voxels : 
 \[
@@ -301,14 +301,18 @@ In section 3.1 we deduced the probability that a specific location $m$ to be dra
     \hspace{2cm} p_k(X_m \geq 1) = 1-(1 - \frac{1}{v})^k \hspace{2cm} \textbf{(1)}
 \]
 To know how many red balls have been drawn at least once (\textbf{i.e. number of unique pair (i,j)}) let us use again the observation
-variable $I$.
+variable $\epsilon$.
 \[
-\mu^{(i,j)}_{uniquepos} = \sum_{m \in \mathbb{J}}p(C(i,j)_m \geq 1).1 + 0. \textbf{ ...}
+N^{(i,j)}_{up} = \sum_{m \in \mathbb{J}}p(C_m(i,j) \geq 1).1 + 0. \textbf{ ...}
 \]
+Which mean value can be found using the law of total expectation :
 \begin{equation}
 \mu^{(i,j)}_{up} = N^j_{up}(1-(1-\frac{1}{v})^{k_i})
 \end{equation}
 or for $J$ not fixed:
+\[
+\mu^{(i,j)}_{up} = \mu^j_{up}(1-(1-\frac{1}{v})^{k_i})
+\]
 \[
 \mu^{(i,j)}_{up} = v(1-(1-\frac{1}{v})^{k_j})(1-(1-\frac{1}{v})^{k_i})
 \]
@@ -324,8 +328,30 @@ or for $J$ not fixed:
 
 
 \subsubsection{Voxel occupancy by a pair (i,j) - Standard deviation}
+For this calculus we have to consider again the variance of the voxel occupancy of the $J$ distribution in case it is not fixed. To do so we use again
+the total variance formula in its generalistic form :
+\[
+    Var(N^{(i,j)}_{up}) = E[Var(N^{(i,j)}_{up}|J)] + Var(E[N^{(i,j)}_{up}|J])
+\]
+To make this less dense, let us break this in a few terms.\newline
+The simplest term is obtained from \textbf{(9)}:
+\[
+E(N^{(i,j)}_{up}|J) = N^j_{up}(1-(1-\frac{1}{v})^{k_i})
+\]
+\[\begin{split}
+    \rightarrow Var(E(N^{(i,j)}_{up}|J)) &= (1-(1-\frac{1}{v})^{k_i})Var(N^j_{up}) \\
+    &=(1-(1-\frac{1}{v})^{k_i})\sigma^{2j}_{up}
+\end{split}
+\]
+For the $Var(N^{(i,j)}_{up}|J)$ term we will have to take into consideration covariance term that arise from voxel-voxel dependancy. With this in mind
+let us start with the probability of the voxel-voxel intersection, $m \neq l$ :
+\[
+P(X^{(i,j)}_m \geq 1 \cap X^{(i,j)}_l \geq 1)
+\]
 
-We have determined expectancies above but in order to perform relevant statistics we need to find standard deviation of our random variables.
+
+
+
 
 
 
