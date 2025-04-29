@@ -327,9 +327,9 @@ or for $J$ not fixed:
 
 
 
-\subsubsection{Voxel occupancy by a pair (i,j) - Standard deviation}
+\subsubsection{Voxel occupancy by a pair (i,j)-Standard deviation}
 For this calculus we have to consider again the variance of the voxel occupancy of the $J$ distribution in case it is not fixed. To do so we use again
-the total variance formula in its generalistic form :
+the total variance formula in its generalistic form:
 \[
     Var(N^{(i,j)}_{up}) = E[Var(N^{(i,j)}_{up}|J)] + Var(E[N^{(i,j)}_{up}|J])
 \]
@@ -339,28 +339,63 @@ The simplest term is obtained from \textbf{(9)}:
 E(N^{(i,j)}_{up}|J) = N^j_{up}(1-(1-\frac{1}{v})^{k_i})
 \]
 \[\begin{split}
-    \rightarrow Var(E(N^{(i,j)}_{up}|J)) &= (1-(1-\frac{1}{v})^{k_i})Var(N^j_{up}) \\
+    \rightarrow Var(E(N^{(i,j)}_{up}|J)) &= (1-{(1-\frac{1}{v})}^{k_i})Var(N^j_{up}) \\
     &=(1-(1-\frac{1}{v})^{k_i})\sigma^{2j}_{up}
 \end{split}
 \]
-For the $Var(N^{(i,j)}_{up}|J)$ term we will have to take into consideration covariance term that arise from voxel-voxel dependancy. With this in mind
-let us start with the probability of the voxel-voxel intersection, $m \neq l$ :
+For the $Var(N^{(i,j)}_{up}|J)$ term we will have to take into consideration covariance term that arise 
+from voxel-voxel dependancy (\S3.3.2). With this in mind
+let us start with the probability of the voxel-voxel intersection, $m \neq l$: $P(X^{(i,j)}_m \geq 1 \cap X^{(i,j)}_l \geq 1)$.
 \[
-P(X^{(i,j)}_m \geq 1 \cap X^{(i,j)}_l \geq 1)
+X^{(i,j)} = X^i \cap X^j
+\]
+\[
+\Rightarrow X_m^{(i,j)} \cap X_l^{(i,j)} = (X_m^i \cap X_m^j) \cap (X_l^i \cap X_l^j)
+\]
+Under randomess assumption distribution $I$ and $J$ are independent, so we re-order terms and use \textbf{(4)}:
+\[
+    X_m^{(i,j)} \cap X_l^{(i,j)} = X_m^i \cap X_l^i \cap X_m^j \cap X_l^j
+\]
+\[\begin{split}
+    \Rightarrow P(X_m^{(i,j)} \cap X_l^{(i,j)}) &= P((X_m^i \cap X_l^i) \cap (X_m^j \cap X_l^j)) \\
+    &= P(X_m^i \cap X_l^i)P(X_m^j \cap X_l^j)
+\end{split}
+\]
+\begin{equation}
+    \begin{split}
+    P(X_m^{(i,j)} \cap X_l^{(i,j)}) &=  [1 - 2(1-\frac{1}{v})^{k_i} + (1-\frac{2}{v})^{k_i}][1 - 2{(1-\frac{1}{v})}^{k_j} + (1-\frac{2}{v})^{k_j}] \\ 
+                                    &= \prod_{k\in(k_i,k_j)} 1 - 2{(1-\frac{1}{v})}^{k} + {(1-\frac{2}{v})}^{k}
+\end{split}
+\end{equation}
+Now let us consider the covariance term:
+\[\begin{split}
+    Cov(\epsilon_{ij}(m); \epsilon_{ij}(l)) &= E(\epsilon_{ij}(m);\epsilon_{ij}(l)) - E(\epsilon_{ij}(m))\epsilon_{ij}(l) \\
+    &= P(X_m^{(i,j)} \cap X_l^{(i,j)}).1 - 2P(X_m^{(i,j)}).1
+\end{split}
+\]
+We can already find the left term using the \textbf{(10)} result, for the right term, let us take advantage of $J$ being
+fixed in this calculus. In such a case we know the set of positions $\mathbb{J}$ occupied by $j$ single molecules, so
+we have, independently of $I$ distribution:
+\[
+    P(X_m^{(i,j)}) = 0 \hspace{1cm} \forall m \notin \mathbb{J}  
+\]
+Then
+\[
+    \sum_{m \in V} = P(X_m^{(i,j)}) = \sum_{m \in \mathbb{J}} = P(X_m^{(i,j)}) = N^j_{up}[1-{(1-\frac{1}{v})}^{k_i}]
 \]
 
-
-
-
-
-
-
+To sum-up, at this point we can write that:
+\[\begin{split}
+    Var(N^{(i,j)}_{up}|J) &= \sum_{m\in V}P(X_m^{(i,j)} \cap X_l^{(i,j)}) - 2N^j_{up}[1-{(1-\frac{1}{v})}^{k_i}] \\
+    &=  \sum_{m\in \mathbb{J}}P(X_m^{(i,j)} \cap X_l^{(i,j)}) - 2N^j_{up}[1-{(1-\frac{1}{v})}^{k_i}]
+\end{split}
+\]
 
 
 \newpage
 \subsection{Generalisation to n distributions}
 
-Let us consider n distributions : $i_1, i_2, ..., i_n$. What is the probality that any combination of single molecule $c$ to be found in an unique position $m$?
+Let us consider n distributions: $i_1, i_2, \ldots, i_n$. What is the probality that any combination of single molecule $c$ to be found in an unique position $m$?
 Under the assomption of randomess, any distribution $i$ is independent from other distributions, thus the probability to find $i_1$ and $i_2$ at any given
 location is the product of the probabilities of distributions to localize at this location.
 
@@ -369,7 +404,7 @@ p(c) = \prod_{i \in c}p(i)
 \]
 with 
 \begin{equation}
-\hspace{2cm} p(i) = 1-(1-\frac{1}{v})^{k_i} \hspace{2cm} \textbf{(i)}
+\hspace{2cm} p(i) = 1-{(1-\frac{1}{v})}^{k_i} \hspace{2cm} \textbf{(i)}
 \end{equation}
 
 Again to know how many different positions contains a combination of single molecule $c$, we define the observation variable $I$.
