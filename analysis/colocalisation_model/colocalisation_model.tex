@@ -67,25 +67,24 @@ when a single molecule from distribution \textit{i} occupy the same voxel as a s
 \section{Probabilistic model}
 
 \subsection{Presentation}
-The process of assigning a position to single molecules amongst the v possible positions can be modeled as a probabilistic game where
+The process of assigning a position to single molecules amongst the $v$ possible positions can be modeled as a probabilistic game where
 positions are uniquely numbered balls placed in an urn. Assigning coordinates to a single molecule is drawing a ball in the urn,
-before each drawn balls are replaced in the urn.
-
+before each draw balls are replaced in the urn.
 \subsection{Unique distribution}
-To begin, let us consider a system containing a unique distribution \textbf{I} of single molecules randomly placed amongst the v positions of the cell.
+To begin, let us consider a system containing a unique distribution $I$ of single molecules randomly placed amongst the $v$ positions of the cell.
 
-\subsubsection{self co-localization probability}
-The probability that a specific single molecule \textit{i} is found at position \textit{m} is the probability to draw the ball numbered
-\textit{m}:
+\subsubsection{Self co-localization probability}
+The probability that a specific single molecule $i$ is found at position $m$ is the probability to draw the ball numbered
+$m$:
 
 \[
     \hspace{3.5cm} p_i(X=m) = \frac{1}{v} \hspace{2cm} \forall  i \in I; \forall m \in V
 \]
-Then the probability to not draw the specific location \textit{m} is :
+Then the probability to not draw the specific location \textit{m} is:
 \[
-    \hspace{3.5cm} p_i(\overline{m}) = \frac{1}{v} \hspace{2cm} \forall  i \in I; \forall m \in V
+    \hspace{3.5cm} p_i(\overline{m}) = 1-\frac{1}{v} \hspace{2cm} \forall  i \in I; \forall m \in V
 \]
-After \textit{k} draws, the probability to never draw a the specific location \textit{m} follows a bionomial law and is :
+After \textit{k} draws, the probability to never draw a specific location \textit{m} follows a bionomial law and is :
 \[
 p_k(X_m = 0) = (1 - \frac{1}{v})^k \hspace{2cm} k \in \mathbb{N^*}
 \]
@@ -94,21 +93,21 @@ On the contrary the probability that the location \textit{m} was drawn at least 
 p_k(X_m \geq 1) = 1-(1 - \frac{1}{v})^k
 \end{equation}
 To study self co-localization we are interested to know how many different positions have been drawn in k-trials. To do so let us 
-define the observation variable $ \epsilon $.
+define the observation variable $\epsilon$.
 \[
-\forall m \in V, I(m) = \begin{cases}
+\forall m \in V, \epsilon (m) = \begin{cases}
     0 \text{ if } X_m = 0 \\
     1 \text{ if } X_m \geq 1
 \end{cases}
 \]
-The expected number of \textbf{different} positions $ N^{unique}_{pos} $ drawn is then the expectancy of $ \epsilon $ after k draws.
+The expected number of \textbf{different} positions $ N^{unique}_{pos} $ drawn is then the expectancy of $ \epsilon $ in the volume after k draws.
 \[
-    N_{uniquepos} = \sum_{m \in V}p(X_m = 0).0 + p(X_m \geq 1).1
+    \mu_{uniquepos} = \sum_{m \in V}p_k(X_m = 0).0 + p_k(X_m \geq 1).1
 \]
 
 \begin{equation}
     \begin{split}
-    N_{uniquepos} = \mu_{up} = v(1-(1-\frac{1}{v})^k) \\
+    \mu_{up} = v(1-{(1-\frac{1}{v})}^k) \\
     \end{split}
 \end{equation}
 Where $\mu_{up}$ is the mean number of occupied position.
@@ -117,10 +116,10 @@ To adress self co-localization probability we are interested to know the number 
 in other words, duplicates draws or \textbf{self co-localization events}. To do so, we remove from the total number of picks (k) the
 number of picks that discover a new position.
 \[
-N_{self colocalization} = k - v(1-(1-\frac{1}{v})^k)
+\mu_{self colocalization} = k - v(1-(1-\frac{1}{v})^k)
 \]
 \begin{equation}
-p_{self colocalization} = \mu_{sc} = \frac{N_{self colocalization}}{k} = 1 - \frac{v}{k}(1-(1-\frac{1}{v})^k)
+p_{self colocalization}  = \frac{\mu_{sc}}{k} = 1 - \frac{v}{k}(1-{(1-\frac{1}{v})}^k)
 \end{equation}
 \textit{\textbf{Notes:}}
 \begin{itemize}
@@ -128,11 +127,14 @@ p_{self colocalization} = \mu_{sc} = \frac{N_{self colocalization}}{k} = 1 - \fr
     \item If $k = 1$, $p_{self colocalization} = 0$
 \end{itemize}
 
-\subsubsection{Dependency of any distribution within the volume}
+\subsubsection{Self dependency of any distribution within the volume}
 
-Although, distributions $i_i$ are independent from each other, $X_m$ and $X_l$ are \textbf{not independent} which means we can't consider the sum of $I(m)$ as a
-bionomial distribution. To understand this let us consider the probability that a single molecule $i$ is found at voxel $m$ and at voxel $l \neq m$.
-We use well known inclusion-exclusion principle.
+Although all distributions $i_i$ are independent from each other, $X_m$ and $X_l$ are \textbf{not independent} for
+any pair of voxels $(m,l)$.$\epsilon$ follows a Bernoulli law, usually, summing this variable in the volume should
+lead to a variable following a bionomial law. However we argue in this section that there is a co-dependency between
+the voxels, meaning we can't consider the sum of $\epsilon (m)$ as abionomial distribution. 
+To understand this let us consider the probability that a single molecule $i$ is found at voxel $m$ and at voxel $l \neq m$.
+Starting with the inclusion-exclusion principle:
 \[
 P(X_m \geq 1 \cap X_l \geq 1) = P(X_m \geq 1) + P(X_l \geq 1) - P(X_m\geq 1 \cup X_l\geq 1)
 \]
@@ -353,48 +355,6 @@ Again to know how many different positions contains a combination of single mole
 \]
 
 
-% \subsubsection{Standard deviation of unique positions number occupied by a pair (i,j)}
-% The number of different positions occupied by pairs $(i,j)$, $N^{(i,j)}_{uniquepos}$, is actually expectancy of the sum of \textbf{dependent} random variables
-% $I(m) \forall m \in V$. Let us call $U(i,j)$ the random variable describing this.
-% \[
-% U(i,j) = \sum_{m \in \mathbb{J}}I(m) = \sum_{m \in \mathbb{J}}I_i(m)I_j(m)
-% \]
-% \[
-% N^{(i,j)}_{uniquepos} = E(U(i,j))
-% \]
-
-% We already determined the expectancy of the random variable $U$ in above subsection. To fully define the probability density of U
-% let us find its standard deviation. The sum of random variables follows the law of \textbf{total variance} :
-% \[
-% Var(U(i,j)) = \sum_{m \in \mathbb{J}}Var(I(m)) + 2.\sum_{(l,m) \in \mathbb{J^2}}Cov(I(m),I(l))
-% \]
-% To simply calculus, let us break it into 2 parts :
-% \[
-% S = \sum_{m \in \mathbb{J}}Var(I(m))
-% \]
-% \[
-% C = \sum_{(l,m) \in \mathbb{J^2}}Cov(I(m),I(l))
-% \]
-% Let us start with calculation of $S$ term. $I(m)$ follows a Bernoulli law of sucess probability $p = (1-(1-\frac{1}{v})^k)$ and variance :
-% \[
-% Var(I_m) = p(1-p)
-% \]
-% \[
-% Var(I_m) = (1-(1-\frac{1}{v})^k) (1-(1-(1-\frac{1}{v})^k))
-% \]
-% \[
-% Var(I_m) = (1-\frac{1}{v})^k - (1-\frac{1}{v})^{2k}
-% \]
-% Then :
-% \[
-% S = \sum_{m \in \mathbb{J}}Var(I_m) = N^j_{uniquepos}[(1-\frac{1}{v})^k - (1-\frac{1}{v})^{2k}]
-% \]
-
-% Let's move on to the \textbf{covariant} part of the total variance, but before, let us consider why $U(i,j)$ does not follow an independent distribution.
-
-%\section{Correction for non-perfect co-localization}
-
-%\section{Statistics and p-values}
 
 \begin{figure}[h]
 \centering
