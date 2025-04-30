@@ -333,62 +333,147 @@ the total variance formula in its generalistic form:
 \[
     Var(N^{(i,j)}_{up}) = E[Var(N^{(i,j)}_{up}|J)] + Var(E[N^{(i,j)}_{up}|J])
 \]
+\textbf{Notes \& notations:}
+\begin{itemize}
+    \item Let $p_i = (1-{(1-\frac{1}{v})}^{k_i})$, the probability that voxel $m$ is occupied with at least one molecule $i$.
+    \item The probability that $i$ and $j$ are in voxel $m$ can be written $P(X^i_m \cap X^j_m) = p_ip_j$ since $I$ and $J$ are independent.
+    \item Let $q_i = (1-2{(1-\frac{1}{v})}^{k_i} + {(1-\frac{2}{v})}^{k_i})$, the probability that voxel $m$ and $l\neq m$ are both occupied with at least
+    one molecule $i$.
+    \item The probability that $i$ and $j$ are in voxel $m$ and $l$ can be written $P((X^i_m \cap X^j_m) \cap (X^i_l \cap X^j_l)) = q_iq_j$ since $I$ and $J$ are independent.
+\end{itemize}
+
 To make this less dense, let us break this in a few terms.\newline
 The simplest term is obtained from \textbf{(9)}:
 \[
-E(N^{(i,j)}_{up}|J) = N^j_{up}(1-(1-\frac{1}{v})^{k_i})
-\]
-\[\begin{split}
-    \rightarrow Var(E(N^{(i,j)}_{up}|J)) &= (1-{(1-\frac{1}{v})}^{k_i})Var(N^j_{up}) \\
-    &=(1-(1-\frac{1}{v})^{k_i})\sigma^{2j}_{up}
-\end{split}
-\]
-For the $Var(N^{(i,j)}_{up}|J)$ term we will have to take into consideration covariance term that arise 
-from voxel-voxel dependancy (\S3.3.2). With this in mind
-let us start with the probability of the voxel-voxel intersection, $m \neq l$: $P(X^{(i,j)}_m \geq 1 \cap X^{(i,j)}_l \geq 1)$.
-\[
-X^{(i,j)} = X^i \cap X^j
+E(N^{(i,j)}_{up}|J) = N^j_{up}p_i
 \]
 \[
-\Rightarrow X_m^{(i,j)} \cap X_l^{(i,j)} = (X_m^i \cap X_m^j) \cap (X_l^i \cap X_l^j)
+    \Rightarrow Var(E(N^{(i,j)}_{up}|J)) = vp_iVar(N^j_{up})
 \]
-Under randomess assumption distribution $I$ and $J$ are independent, so we re-order terms and use \textbf{(4)}:
+For the $Var(N^{(i,j)}_{up}|J)$ term we will have to take into consideration covariance term that arise from voxel-voxel dependancy (\S3.2.2). 
 \[
-    X_m^{(i,j)} \cap X_l^{(i,j)} = X_m^i \cap X_l^i \cap X_m^j \cap X_l^j
-\]
-\[\begin{split}
-    \Rightarrow P(X_m^{(i,j)} \cap X_l^{(i,j)}) &= P((X_m^i \cap X_l^i) \cap (X_m^j \cap X_l^j)) \\
-    &= P(X_m^i \cap X_l^i)P(X_m^j \cap X_l^j)
-\end{split}
-\]
-\begin{equation}
-    \begin{split}
-    P(X_m^{(i,j)} \cap X_l^{(i,j)}) &=  [1 - 2(1-\frac{1}{v})^{k_i} + (1-\frac{2}{v})^{k_i}][1 - 2{(1-\frac{1}{v})}^{k_j} + (1-\frac{2}{v})^{k_j}] \\ 
-                                    &= \prod_{k\in(k_i,k_j)} 1 - 2{(1-\frac{1}{v})}^{k} + {(1-\frac{2}{v})}^{k}
-\end{split}
-\end{equation}
-Now let us consider the covariance term:
-\[\begin{split}
-    Cov(\epsilon_{ij}(m); \epsilon_{ij}(l)) &= E(\epsilon_{ij}(m);\epsilon_{ij}(l)) - E(\epsilon_{ij}(m))\epsilon_{ij}(l) \\
-    &= P(X_m^{(i,j)} \cap X_l^{(i,j)}).1 - 2P(X_m^{(i,j)}).1
-\end{split}
-\]
-We can already find the left term using the \textbf{(10)} result, for the right term, let us take advantage of $J$ being
-fixed in this calculus. In such a case we know the set of positions $\mathbb{J}$ occupied by $j$ single molecules, so
-we have, independently of $I$ distribution:
-\[
-    P(X_m^{(i,j)}) = 0 \hspace{1cm} \forall m \notin \mathbb{J}  
-\]
-Then
-\[
-    \sum_{m \in V} = P(X_m^{(i,j)}) = \sum_{m \in \mathbb{J}} = P(X_m^{(i,j)}) = N^j_{up}[1-{(1-\frac{1}{v})}^{k_i}]
+    Var(N^{(i,j)}_{up}|J) = \sum_{m\in V}Var(\epsilon_{ij}(m)) + 2\sum_{m < l \in V}Cov(\epsilon_{ij}(m); \epsilon_{ij}(l))
 \]
 
-To sum-up, at this point we can write that:
+However we can take advantage that in this case the $J$ distribution is \textbf{fixed}, meaning that if we restrict
+to the voxels having at least one $j$ particle (\textbf{i.e.} $\mathbb{J}$) the covariance arises only from the distribution $I$ and is exactly the same
+that the one computed in \S3.2.3 when substuing $v$ with $N^j_{up}$.
 \[\begin{split}
-    Var(N^{(i,j)}_{up}|J) &= \sum_{m\in V}P(X_m^{(i,j)} \cap X_l^{(i,j)}) - 2N^j_{up}[1-{(1-\frac{1}{v})}^{k_i}] \\
-    &=  \sum_{m\in \mathbb{J}}P(X_m^{(i,j)} \cap X_l^{(i,j)}) - 2N^j_{up}[1-{(1-\frac{1}{v})}^{k_i}]
+    2\sum_{m < l \in V}Cov(\epsilon_{ij}(m); \epsilon_{ij}(l)) &= 2\sum_{m < l \in \mathbb{J}}Cov(\epsilon_{ij}(m); \epsilon_{ij}(l)) \\
+                & = N^j_{up}(N^j_{up}-1)[(1-\frac{2}{v})^k - (1-\frac{1}{v})^{2k}]
 \end{split}
+\]
+
+The last term we should look at before summing-up is $\sum_{m\in V}Var(\epsilon_{ij}(m))$ using again $J$ fixed, we know $\epsilon_{i,j}(m) = 0 \hspace{0.20cm}\forall m \notin \mathbb{J}$:
+\[\begin{split}
+    \sum_{m\in V}Var(\epsilon_{ij}(m))&= \sum_{m\in \mathbb{J}}Var(\epsilon_{ij}(m))\\
+                                      &=  \sum_{m\in \mathbb{J}}p_i(1-p_i) \\
+                                      &=N^j_{up}p_i(1-p_i)
+\end{split}
+\]
+Let us group everything together :
+\[\begin{split}
+    Var(N^{(i,j)}_{up}|J) &= \sum_{m\in V}Var(\epsilon_{ij}(m)) + 2\sum_{m < l \in V}Cov(\epsilon_{ij}(m); \epsilon_{ij}(l)) \\
+                          &= N^j_{up}p_i(1-p_i)+ N^j_{up}(N^j_{up}-1)[(1-\frac{2}{v})^{k_i} - (1-\frac{1}{v})^{2k_i}]
+\end{split}
+\]
+Applying expectancy to this term:
+\[\begin{split}
+E(Var(N^{(i,j)}_{up}|J)) &= vp_jp_i(1-p_i) + E((N^{2j}_{up} - N^j_{up})[(1-\frac{2}{v})^{k_i} - (1-\frac{1}{v})^{2k_i}]) \\
+    &= vp_jp_i(1-p_i) + (vp_j(1-p_j) + v^2p^2_j - vp_j)[c_i] \\
+    &= vp_jp_i(1-p_i) + (vp_j(1-p_j)c_i + v^2p^2_jc_i - vp_jc_i) \\
+\end{split}
+\]
+
+\textbf{Notes \& notations}
+\begin{itemize}
+    \item Let $c_i = (1-\frac{2}{v})^{k_i} - (1-\frac{1}{v})^{2k_i}]$
+    \item Note that $c_i + p^2_i = q_i$
+    \item From \S3.2.4 we can write $Var(N^j_{up}) = vp_j(1-p_j) v(v-1)[q_j-p_j^2]$
+\end{itemize}
+
+Summing-up the total variance:
+\[\begin{split}
+    Var(N^{(i,j)}_{up}) &= vp_jp_i(1-p_i) + (vp_j(1-p_j)c_i + v^2p^2_jc_i - vp_jc_i) \\
+        &+vp_iv(v-1)[q_j-p_j^2]) \\
+\end{split}
+\]
+After simplification, we have the total variance:
+\begin{equation}
+    Var(N^{(i,j)}_{up}) = vp_ip_j(1-p_ip_j) + v(v-1)[q_iq_j-(p_ipj)^2]
+\end{equation}
+
+\newpage
+\section*{Generalization to \(n\) Distributions}
+
+Consider \(n\) independent molecule distributions labeled \(1,2,\dots,n\), with abundances \(k_i\) in a volume discretized into \(v\) voxels.
+
+\subsection*{1. Single-Distribution Quantities}
+
+For each distribution \(i\), define
+\[
+p_i \;=\;\Pr(X_{i,m}\ge1)
+=1-\bigl(1-\tfrac1v\bigr)^{k_i},
+\quad
+q_i \;=\;\Pr(X_{i,m}\ge1,\;X_{i,\ell}\ge1)
+=1 - 2\bigl(1-\tfrac1v\bigr)^{k_i} + \bigl(1-\tfrac2v\bigr)^{k_i},
+\]
+for any two distinct voxels \(m\neq\ell\).
+
+\subsection*{2. Combination of Distributions}
+
+Let \(c\subseteq\{1,\dots,n\}\) be any nonempty subset of distributions.  Define
+\[
+p_c \;=\;\Pr(\forall\,i\in c:\,X_{i,m}\ge1)
+=\prod_{i\in c} p_i,
+\quad
+q_c \;=\;\Pr(\forall\,i\in c:\,X_{i,m}\ge1,\;X_{i,\ell}\ge1)
+=\prod_{i\in c} q_i.
+\]
+
+\subsection*{3. Random Variable}
+
+Define the count of voxels co-occupied by all distributions in \(c\):
+\[
+N_c \;=\;\sum_{m=1}^v I^{(c)}_m,
+\qquad
+I^{(c)}_m = \mathbf{1}\{\forall\,i\in c:\,X_{i,m}\ge1\}.
+\]
+
+\subsection*{4. Expectation}
+
+Each \(I^{(c)}_m\) has marginal probability \(p_c\), so
+\[
+E\bigl[N_c\bigr]
+= \sum_{m=1}^v E[I^{(c)}_m]
+= v\,p_c.
+\]
+
+\subsection*{5. Variance and Standard Deviation}
+
+Because the indicators \(I^{(c)}_m\) are dependent across voxels, use
+\[
+Var(N_c)
+= \sum_{m=1}^v Var(I^{(c)}_m)
+  + 2\sum_{1\le m<\ell\le v} Cov\bigl(I^{(c)}_m, I^{(c)}_\ell\bigr).
+\]
+Here,
+\[
+Var(I^{(c)}_m) = p_c(1-p_c),
+\quad
+Cov\bigl(I^{(c)}_m, I^{(c)}_\ell\bigr) = q_c - p_c^2.
+\]
+Thus
+\[
+Var(N_c)
+= v\,p_c(1-p_c)
+  + v(v-1)\bigl(q_c - p_c^2\bigr),
+\]
+and the standard deviation is
+\[
+\sigma(N_c)
+= \sqrt{Var(N_c)} 
+= \sqrt{\,v\,p_c(1-p_c) + v(v-1)\bigl(q_c - p_c^2\bigr)\,}.
 \]
 
 
