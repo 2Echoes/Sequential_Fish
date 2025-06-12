@@ -14,7 +14,7 @@ class MappingError(Exception) :
     """
     pass
 
-def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, bead_channel = True) :
+def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, has_bead_channel = True) :
     """
     Assume z is the smallest dimension
     """
@@ -25,10 +25,10 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, b
     map_ = dict()
 
     try :
-        c_idx = shape.index(color_number + bead_channel)
+        c_idx = shape.index(color_number + has_bead_channel + 1 )# +1 for DAPI
     except ValueError :
-        if bead_channel :
-            error = "{0} colors channels (+1 for beads) are expected from experimental file but no matching axis was found in shape {1}.".format(color_number, shape)
+        if has_bead_channel :
+            error = "{0} colors channels (+2 for beads and dapi) are expected from experimental file but no matching axis was found in shape {1}.".format(color_number, shape)
         else :
             error = "{0} colors channels are expected from experimental file but no matching axis was found in shape {1}.".format(color_number, shape)
         raise MappingError(error)
