@@ -27,6 +27,8 @@ def main(run_path) :
         GENES_NAMES_KEY = parameters_dict['GENES_NAMES_KEY']
         WASHOUT_KEY_WORD = parameters_dict['WASHOUT_KEY_WORD']
         HAS_BEAD_CHANNEL = parameters_dict['HAS_BEAD_CHANNEL']
+
+        from Sequential_Fish import __version__
         
         FOLDER_KEYS = {
             'nucleus_folder' : nucleus_folder,
@@ -52,9 +54,7 @@ def main(run_path) :
         "full_path",
         "fish_shape",
         "fish_map",
-        "dapi_full_path",
-        "dapi_shape",
-        "dapi_map"
+        "pipeline_version"
         ]
     Acquisition = pd.DataFrame(columns=COLUMNS)
     cycle_map = pd.read_excel(run_path + '/' + MAP_FILENAME)
@@ -147,6 +147,7 @@ def main(run_path) :
 
 
     #Output
+    Acquisition['pipeline_version'] = __version__
     save_path = run_path + '/result_tables/'
     os.makedirs(save_path, exist_ok=True)
     Acquisition.to_excel(save_path + '/Acquisition.xlsx')
