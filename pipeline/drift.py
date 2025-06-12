@@ -34,9 +34,7 @@ def main(run_path) :
         'drift_y',
         'drift_x',
         'voxel_size',
-        'bead_size',
         'removed_slices',
-        'highpass_filter',
         'max_projection',
 
     ]
@@ -72,17 +70,11 @@ def main(run_path) :
         fish_image_stack = open_image(fish_path)
         fish_image_stack = reorder_image_stack(fish_image_stack, fish_map)
 
-        max_z = max(
-            dapi_image.shape[0],
-            fish_image_stack.shape[1]
-        )
-
         #Selecting images
         fish_image_stack = fish_image_stack[...,-1] # Selecting beads channel
         assert len(sub_acq) == len(fish_image_stack) == len(sub_acq['acquisition_id'])
         fish_image_stack = fish_image_stack[:,DRIFT_SLICE_TO_REMOVE[0]:-DRIFT_SLICE_TO_REMOVE[1],...] # removing first slice that is noisy
         fish_reference_image = fish_image_stack[0]
-        fish_other_images = fish_image_stack[1:]
         dapi_image = dapi_image[DRIFT_SLICE_TO_REMOVE[0]:-DRIFT_SLICE_TO_REMOVE[1],:,:,-1]
 
         #Reference fov has no drift
@@ -108,8 +100,6 @@ def main(run_path) :
         dapi_results = prepro.fft_phase_correlation_drift(
             fish_reference_image[indexer],
             dapi_image[indexer],
-            bead_size=BEAD_SIZE,
-            voxel_size=VOXEL_SIZE
         )
         dapi_results = pd.DataFrame(dapi_results)
         dapi_results['acquisition_id'] = ref_acquisition_id
@@ -129,17 +119,13 @@ def main(run_path) :
             fish_result = prepro.fft_phase_correlation_drift(
                 reference_image= fish_reference_image,
                 drifted_image= drifted_fish,
-                bead_size=BEAD_SIZE,
-                voxel_size=VOXEL_SIZE,
             )
 
             if (fish_result['drift_z'], fish_result['drift_y'], fish_result['drift_x'],) == (0,0,0) :
                 max_proj = True
                 fish_result = prepro.fft_phase_correlation_drift(
-                    reference_image= np.max(fish_reference_image,axis=0),
-                    drifted_image= np.max(drifted_fish, axis=0),
-                    bead_size=BEAD_SIZE,
-                    voxel_size=VOXEL_SIZE,
+                    reference_image= fish_reference_image,
+                    drifted_image= drifted_fish,
                 )
 
             fish_result = pd.DataFrame(fish_result)
