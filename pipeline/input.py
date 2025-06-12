@@ -8,13 +8,14 @@ import os
 import warnings
 import numpy as np
 from Sequential_Fish.tools.utils import open_image, auto_map_channels, _find_one_or_NaN, reorder_image_stack
+from Sequential_Fish.pipeline.utils import open_fish_signal
 
 def main(run_path) :
 
     print(f"input runing for {run_path}")
 
     if len(sys.argv) == 1:
-        from Sequential_Fish.pipeline_parameters import FOLDER_KEYS, MAP_FILENAME, cycle_regex, CYCLE_KEY, GENES_NAMES_KEY, WASHOUT_KEY_WORD, HAS_BEAD_CHANNEL
+        from Sequential_Fish.pipeline_parameters import FOLDER_KEYS, MAP_FILENAME, cycle_regex, CYCLE_KEY, GENES_NAMES_KEY, WASHOUT_KEY_WORD
     else :
         from Sequential_Fish.run_saves import get_parameter_dict
         PARAMETERS = ['nucleus_folder','fish_folder', 'MAP_FILENAME', 'cycle_regex', 'CYCLE_KEY', 'GENES_NAMES_KEY', 'WASHOUT_KEY_WORD', 'HAS_BEAD_CHANNEL']
@@ -26,7 +27,6 @@ def main(run_path) :
         CYCLE_KEY = parameters_dict['CYCLE_KEY']
         GENES_NAMES_KEY = parameters_dict['GENES_NAMES_KEY']
         WASHOUT_KEY_WORD = parameters_dict['WASHOUT_KEY_WORD']
-        HAS_BEAD_CHANNEL = parameters_dict['HAS_BEAD_CHANNEL']
 
         from Sequential_Fish import __version__
         
@@ -54,6 +54,8 @@ def main(run_path) :
         "full_path",
         "fish_shape",
         "fish_map",
+        "bead_channel", #TODO Add a way to infer bead channel or None if not found in cycle map
+        "dapi_channel", #TODO Add a way to infer dapi channel or raise Error if not found
         "pipeline_version"
         ]
     Acquisition = pd.DataFrame(columns=COLUMNS)
@@ -63,47 +65,39 @@ def main(run_path) :
     print("Expected {0} colors.".format(color_number))
     print("Expected {0} cycles.".format(cycle_number))
 
-    file_index = 0
+    bead_channel = None #TODO
+    dapi_channel = 0
+    has_bead = not bead_channel is None
+
     Acquisition['acquisition_id'] = np.arange(len(location_list)*cycle_number)
     Acquisition['location'] = location_list * cycle_number
     cycles_list = list(cycle_map[CYCLE_KEY])*location_number
     cycles_list.sort()
     Acquisition['cycle'] = cycles_list
     for location_index, location in enumerate(location_list) :
-
-        #Get dapi_path
-        dapi_full_path = run_path + "/{0}/{1}/".format(FOLDER_KEYS.get('nucleus_folder'), location)
-        assert len(os.listdir(dapi_full_path)) == 1
-        dapi_full_path += os.listdir(dapi_full_path)[0]
-        assert os.path.isfile(dapi_full_path)
-        dapi_im = open_image(dapi_full_path)
-        dapi_shape = dapi_im.shape
-        dapi_map = auto_map_channels(dapi_im, color_number=1, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
-        dapi_reodered_shape = reorder_image_stack(dapi_im, dapi_map).shape
-
-        #Setting dapi informations
         index = Acquisition[Acquisition['location'] == location].index
-        Acquisition.loc[index, ['dapi_full_path']] = dapi_full_path
-        Acquisition.loc[index, ['dapi_shape']] = pd.Series((tuple(dapi_shape),)*cycle_number, index=index)
-        Acquisition.loc[index, ['dapi_map']] = pd.Series((dapi_map,)* cycle_number, index=index)
 
-        #Setting general fish informations
+        #Setting fish full path
         fish_path = run_path + "/{0}/{1}/".format(FOLDER_KEYS.get('fish_folder'), location)
         fish_path_list = os.listdir(fish_path)
-        fish_path_list.sort() # THIS MUST GIVE CYCLE ORDERED LIST ie : filename cycle matches map cycles and rest of filename doesn't change list order.
-        fish_im = open_image(fish_path + fish_path_list[0]) #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
-        fish_map = auto_map_channels(fish_im, color_number=color_number, cycle_number=cycle_number, bead_channel=HAS_BEAD_CHANNEL)
+        full_path_list = [fish_path + file for file in fish_path_list]
+        Acquisition.loc[index, "full_path"] = full_path_list
+        
+        while len(full_path_list) < len(index) :
+            full_path_list.append(np.NaN)
+
+        fish_im = open_fish_signal(
+            Acquisition=Acquisition,
+            location=location
+            )
+        
+        fish_map = auto_map_channels(fish_im, color_number=color_number, cycle_number=cycle_number, has_bead_channel= has_bead)
         fish_shape = fish_im.shape[:fish_map['cycles']] + fish_im.shape[(fish_map['cycles'] + 1):] #1cycle per acquisition
         reoderdered_shape = reorder_image_stack(fish_im, fish_map).shape
         fish_reodered_shape = reoderdered_shape[1:]
 
-        full_path_list = [fish_path + file for file in fish_path_list]
-        while len(full_path_list) < len(index) :
-            full_path_list.append(np.NaN)
-
         Acquisition.loc[index, "fish_shape"] = pd.Series((fish_shape,)*cycle_number, index=index)
         Acquisition.loc[index, "fish_map"] = pd.Series((fish_map,)*cycle_number, index=index)
-        Acquisition.loc[index, "full_path"] = full_path_list
         Acquisition.loc[index, "fish_reodered_shape"] = pd.Series((fish_reodered_shape,)*cycle_number, index=index)
 
         cycle_regex_result = Acquisition.loc[:, 'full_path'].apply(_find_one_or_NaN, regex=cycle_regex)
@@ -145,9 +139,12 @@ def main(run_path) :
     Gene_map.loc[washout_index, ['target']] = Gene_map.loc[washout_index]['target'] + '_' + Gene_map.loc[washout_index]['cycle'].astype(str) + '_' + Gene_map.loc[washout_index]['color_id'].astype(str)
     assert len(Gene_map['target']) == len(Gene_map['target'].unique()), "{1} duplicates found in Gene map even after washout renaming... If several cycle targets same RNA please add suffix in Gene map to differenciate.\nFound genes : \n{0}".format(Gene_map['target'], len(Gene_map['target']) - len(Gene_map['target'].unique()))
 
-
-    #Output
+    #Set constant
+    Acquisition['bead_channel'] = bead_channel
+    Acquisition['dapi_channel'] = dapi_channel
     Acquisition['pipeline_version'] = __version__
+    
+    #Output
     save_path = run_path + '/result_tables/'
     os.makedirs(save_path, exist_ok=True)
     Acquisition.to_excel(save_path + '/Acquisition.xlsx')
