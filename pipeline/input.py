@@ -7,8 +7,14 @@ import pandas as pd
 import os
 import warnings
 import numpy as np
-from Sequential_Fish.tools.utils import open_image, auto_map_channels, _find_one_or_NaN, reorder_image_stack
-from Sequential_Fish.pipeline.utils import open_fish_signal
+from Sequential_Fish.tools.utils import auto_map_channels, _find_one_or_NaN, reorder_image_stack
+from Sequential_Fish.pipeline.utils import open_location
+
+def infer_bead_channel(Cell_cycle : pd.DataFrame) :
+    raise NotImplementedError()
+
+def infer_dapi_channel(Cell_cycle : pd.DataFrame) :
+    raise NotImplementedError()
 
 def main(run_path) :
 
@@ -65,8 +71,8 @@ def main(run_path) :
     print("Expected {0} colors.".format(color_number))
     print("Expected {0} cycles.".format(cycle_number))
 
-    bead_channel = None #TODO
-    dapi_channel = 0
+    bead_channel = infer_bead_channel(cycle_map)
+    dapi_channel = infer_dapi_channel(cycle_map)
     has_bead = not bead_channel is None
 
     Acquisition['acquisition_id'] = np.arange(len(location_list)*cycle_number)
@@ -86,7 +92,7 @@ def main(run_path) :
         while len(full_path_list) < len(index) :
             full_path_list.append(np.NaN)
 
-        fish_im = open_fish_signal(
+        fish_im = open_location(
             Acquisition=Acquisition,
             location=location
             )
@@ -119,7 +125,6 @@ def main(run_path) :
         left_on='cycle',
         right_on=CYCLE_KEY
     ).sort_values('acquisition_id').reset_index(drop=True)
-
 
     map_dict ={"cycle" : list(cycle_map[CYCLE_KEY])}
     map_dict.update({

@@ -10,6 +10,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from Sequential_Fish.tools import open_image, reorder_image_stack
+from Sequential_Fish.pipeline.utils import open_location
 from concurrent.futures import ThreadPoolExecutor
 from pbwrap.detection.multithread import multi_thread_full_detection, build_Spots_and_Cluster_df
 from tqdm import tqdm
@@ -65,14 +66,14 @@ def main(run_path) :
         os.makedirs(visual_path, exist_ok=True)
 
         #Opening images
-        print("loading images...")
-        image_path = sub_data[sub_data['cycle'] == 0]['full_path']
-        image_map = sub_data[sub_data['cycle'] == 0]['fish_map']
-        assert len(image_path) == 1, image_path
-        image_path = image_path.iat[0]    
-        image_map = image_map.iat[0]    
-        multichannel_stack = open_image(image_path)# This open 4D multichannel image (all the images are loaded in one call)
-        multichannel_stack = reorder_image_stack(multichannel_stack, image_map)
+        multichannel_stack = open_location(Acquisition, location)
+        
+        dapi_channel = sub_data['dapi_channel'].iat[0]
+        bead_channel = sub_data['bead_channel'].iat[0]
+        if not bead_channel is None : 
+            end_signal = min(dapi_channel, bead_channel)
+        else :
+            end_signal = dapi_channel
 
         #Converting na back to None
         bottom_index, top_index = DETECTION_SLICE_TO_REMOVE
@@ -94,15 +95,13 @@ def main(run_path) :
         if type(top_index) != type(None) : top_index = -top_index
         
         multichannel_stack = multichannel_stack[:,bottom_index:top_index]
-
-        multichannel_stack = multichannel_stack[...,:-1]
+        multichannel_stack = multichannel_stack[...,:end_signal]
         images_list = [np.moveaxis(channel,[3,0,1,2],[0,1,2,3]) for channel in multichannel_stack]
         images_list = [
             [colors for colors in channel]
              for channel in images_list]
         image_number = len(multichannel_stack)
         colors = list(zip(*images_list))
-        colors_number = len(colors)
 
         #Preparing threads arguments
         Detection = pd.DataFrame({
