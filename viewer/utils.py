@@ -6,9 +6,6 @@ from tqdm import tqdm
 
 def open_image(fullpath, image_number=1) :
     arrays = [io.imread(fullpath, plugin="tifffile", img_num=im_index) for im_index in range(image_number)]
-
-
-
     arrays = np.stack(arrays)
     return arrays
 
