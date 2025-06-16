@@ -8,7 +8,7 @@ import os
 import warnings
 import numpy as np
 from Sequential_Fish.tools.utils import auto_map_channels, _find_one_or_NaN, reorder_image_stack
-from Sequential_Fish.pipeline.utils import open_location
+from Sequential_Fish.tools import open_location
 
 def infer_bead_channel(Cell_cycle : pd.DataFrame) :
     raise NotImplementedError()
@@ -148,6 +148,10 @@ def main(run_path) :
     Acquisition['bead_channel'] = bead_channel
     Acquisition['dapi_channel'] = dapi_channel
     Acquisition['pipeline_version'] = __version__
+
+    #Set index
+    Gene_map = Gene_map.set_index('cycle', verify_integrity=True, drop=False)
+    Acquisition = Acquisition.set_index(['location','cycle'], verify_integrity=True, drop=False)
     
     #Output
     save_path = run_path + '/result_tables/'
