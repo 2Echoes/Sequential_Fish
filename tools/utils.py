@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 import datetime as dt
-import re
+import re, os, warnings
+from skimage import io
 from czifile import imread as _imread
 from bigfish.stack import read_image as _read_image
 
@@ -59,17 +60,17 @@ def auto_map_channels(image: np.ndarray, color_number: int, cycle_number: int, h
     return map_
 
 
-def reorder_image_stack(image, map) :
+def reorder_image_stack(image, channel_map) :
     """
     will order image to cycles-zyxc
     """
     
     dim = image.ndim
     if dim == 5 :
-        new_order = (map['cycles'], map['z'], map['y'], map['x'], map['c'])
+        new_order = (channel_map['cycles'], channel_map['z'], channel_map['y'], channel_map['x'], channel_map['c'])
         ref_order = [0,1,2,3,4]
     elif dim == 4 :
-        new_order = (map['z'], map['y'], map['x'], map['c'])
+        new_order = (channel_map['z'], channel_map['y'], channel_map['x'], channel_map['c'])
         ref_order = [0,1,2,3]
     else :
         raise AssertionError()
@@ -77,15 +78,23 @@ def reorder_image_stack(image, map) :
     image = np.moveaxis(image, new_order, ref_order)
     return image
 
-# def reorder_shape_tuple(shape, map) :
 
-
-def open_image(path:str, map=None) :
+def open_image(path:str, image_number=None) :
     """
-    Supports czi, png, jpg, jpeg, tif or tiff extensions.
+    Supports czi, png, jpg, jpeg, tif or tiff extensions.  
+    If `image_number` is provided, extension must be .tif or .tiff
     """
 
     SUPPORTED_TYPES = ('.png', '.jpg', '.jpeg','.tif', '.tiff')
+
+    if not image_number is None :
+        if path.endswith('.tif') or path.endswith('.tiff') :
+            im = [io.imread(path, plugin="tifffile", img_num=im_index) for im_index in range(image_number)]
+            im = np.stack(im)
+            return im
+        else :
+            warnings.warn("'image_number' is provided with a non tiff extension, ignoring 'image_number' argument")
+
 
     if path.endswith('.czi') :
         im = _imread(path)
@@ -93,9 +102,6 @@ def open_image(path:str, map=None) :
         im = _read_image(path)
     else :
         raise ValueError("Unsupported type. Currently supported types are {0}".format(SUPPORTED_TYPES))
-    
-    if type(map) != type(None) :
-        im =reorder_image_stack(im, map)
 
     return im
 
@@ -170,3 +176,53 @@ def safe_merge_no_duplicates(
     if len(left) != check_len : raise ValueError(f"Lines were duplicated or removed during safe merge.\nPrevious count {check_len}; count after merge : {len(left)}")
 
     return left
+
+
+def open_location(
+        Acquisition : pd.DataFrame,
+        location : str,
+) :
+    """
+    Open all cycles of a location and reorder stacks in order (cycle,z,y,x,channel)
+    """
+    loc_Acquisition = Acquisition.loc[Acquisition['location'] == location].index
+    assert len(loc_Acquisition) == 1, "Duplicates locations or no location found"
+
+    fish_path = Acquisition.at[loc_Acquisition[0], 'full_path']
+    fish_path_list = os.listdir(fish_path)
+    fish_path_list.sort() # THIS MUST GIVE CYCLE ORDERED LIST ie : filename cycle matches map cycles and rest of filename doesn't change list order.
+    fish_im = open_image(fish_path + fish_path_list[0]) #Opening first tiff file will open all tiff files of this location (multitif_file) with correct reshaping. Ignoring first dim which will be the cycles gives us image dimension
+
+    stack_map = Acquisition.loc[Acquisition['location'] == location]['fish_map'].iat[0]   
+    fish_im = reorder_image_stack(fish_im, channel_map=stack_map)
+
+    return fish_im
+
+def open_cycle(
+        Acquisition : pd.DataFrame,
+        location : str,
+        cycle : int,
+) :
+    """
+    Open specific cycle of a location and reorder stacks in order (z,y,x,channel)
+    """
+    loc_Acquisition = Acquisition.loc[Acquisition['location'] == location].index
+    assert len(loc_Acquisition) == 1, "Duplicates locations or no location found"
+    fish_path = Acquisition.at[loc_Acquisition[0], 'full_path']
+
+    #Getting image informations
+    fish_path_list = os.listdir(fish_path)
+    fish_path_list.sort() # THIS MUST GIVE CYCLE ORDERED LIST ie : filename cycle matches map cycles and rest of filename doesn't change list order.
+    stack_map = Acquisition.iat[(location,cycle), "fish_map"]
+    stack_shape = Acquisition.iat[(location, cycle), "fish_shape"] 
+    fullpath = Acquisition.iat[(location,cycle), "full_path"]
+    
+    #Preparing image shape
+    z = stack_map['z']
+    c = stack_map['c']
+    image_number = stack_shape[z] * stack_shape[c]
+    image_stack = open_image(fullpath, image_number= image_number)
+
+    image_stack = reorder_image_stack(image_stack, channel_map=stack_map)
+
+    return image_stack
