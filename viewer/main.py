@@ -17,9 +17,6 @@ from ..run_saves.gui import select_path
 from pbwrap.plot.utils import get_colors_list, _get_blue_colors, _get_green_colors, _get_orange_colors, _get_red_colors, _get_yellow_colors, _get_pink_colors, _get_purple_colors
 
 
-VOXEL_SIZE = (200,97,97)
-
-
 def main() :
     
     run_path = select_path()
@@ -29,16 +26,17 @@ def main() :
     tables_dict = {
         table : pd.read_feather(run_path + '/result_tables/' + table + '.feather')  for table in TABLES
     }
+    voxel_size = tables_dict['Detection'].iat[0,'voxel_size']
 
     #Init viewer
     Viewer = napari.Viewer(title=os.path.basename(run_path))
     color_table = create_color_table(tables_dict)
 
     #Loading panel
-    fish_buttons, fish_widgets = fish_container(VOXEL_SIZE, tables_dict, color_table)
-    dapi_buttons, dapi_widgets = dapi_container(VOXEL_SIZE, tables_dict)
-    segmentation_buttons, segmentation_widget = segmentation_container(run_path, tables_dict, VOXEL_SIZE)
-    detection_buttons, detection_widgets = detection_container(VOXEL_SIZE, tables_dict, color_table=color_table)
+    fish_buttons, fish_widgets = fish_container(voxel_size, tables_dict, color_table)
+    dapi_buttons, dapi_widgets = dapi_container(voxel_size, tables_dict)
+    segmentation_buttons, segmentation_widget = segmentation_container(run_path, tables_dict, voxel_size)
+    detection_buttons, detection_widgets = detection_container(voxel_size, tables_dict, color_table=color_table)
     
     load_data_tab = wi.Container(widgets=[fish_buttons, dapi_buttons, segmentation_buttons, detection_buttons], labels=False, layout='vertical', name= 'Load data')
 
@@ -51,7 +49,7 @@ def main() :
         )
 
     #Analysis panel
-    multichannel_DBSCAN_container, multichannel_DBSCAN_instance = analysis_container(tables_dict, VOXEL_SIZE)
+    multichannel_DBSCAN_container, multichannel_DBSCAN_instance = analysis_container(tables_dict, voxel_size)
     Viewer.window.add_dock_widget(multichannel_DBSCAN_container, name='Analysis', area='right', add_vertical_stretch=True, tabify=True)
 
     #Location panel

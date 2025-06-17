@@ -10,11 +10,12 @@ import numpy as np
 from Sequential_Fish.tools.utils import auto_map_channels, _find_one_or_NaN, reorder_image_stack
 from Sequential_Fish.tools import open_location
 
-def infer_bead_channel(Cell_cycle : pd.DataFrame) :
-    raise NotImplementedError()
-
-def infer_dapi_channel(Cell_cycle : pd.DataFrame) :
-    raise NotImplementedError()
+def infer_channel(Cycle_map : pd.DataFrame, keyword= 'DAPI') :
+    index = np.argmax(Cycle_map.eq(keyword).all(0)) - 1 # -1 since first columns is cycle number
+    
+    if index < 0 : raise ValueError(f'Could find {keyword} keyword in Cycle map.')
+    
+    return index
 
 def main(run_path) :
 
@@ -71,8 +72,8 @@ def main(run_path) :
     print("Expected {0} colors.".format(color_number))
     print("Expected {0} cycles.".format(cycle_number))
 
-    bead_channel = infer_bead_channel(cycle_map)
-    dapi_channel = infer_dapi_channel(cycle_map)
+    bead_channel = infer_channel(cycle_map, keyword= 'beads')
+    dapi_channel = infer_channel(cycle_map, keyword= 'DAPI')
     has_bead = not bead_channel is None
 
     Acquisition['acquisition_id'] = np.arange(len(location_list)*cycle_number)
@@ -161,7 +162,6 @@ def main(run_path) :
     Gene_map.to_excel(save_path + 'Gene_map.xlsx')
     Gene_map.to_feather(save_path + 'Gene_map.feather')
     print("Done")
-    
     
 if __name__ == "__main__":
     print(sys.argv)
