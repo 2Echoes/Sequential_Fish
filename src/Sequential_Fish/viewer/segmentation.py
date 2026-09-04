@@ -16,7 +16,8 @@ from magicgui import magicgui
 import cellpose.models as models
 from cellpose.core import use_gpu
 
-available_models = ["cpsam"] + models.get_user_models()
+
+available_models = models.MODEL_NAMES + models.get_user_models()
 gpu_is_available = use_gpu()
 
 
