@@ -28,7 +28,6 @@ class ChromaticWidget(ThreadedWidget) :
         super().__init__(viewer=viewer)
 
 
-
 _CHROMATIC_WIDGETS : 'list[NapariWidget]' = []
 def register_chromatic_widget(cls) :
     _CHROMATIC_WIDGETS.append(cls)
@@ -116,7 +115,6 @@ class SpotCorrector(ChromaticWidget) :
 
 @register_chromatic_widget
 class SignalCorrector(ChromaticWidget) :
-
     def _create_widget(self):
         
         @magicgui(
@@ -221,16 +219,13 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
             location : int,
             degree : int = self.degree,
         ) :
-            
-            voxel_size = spatial_reference.scale
-            print("voxel size for calibration")
-            if len(voxel_size) == 4 :
-                voxel_size = voxel_size[1:]
-            self.voxel_size = tuple([int(v) for v in voxel_size]) # save as reference if user save calibration
 
-            #Convert pixel coordinates to nm to account for anisotropy
-            coords1 = spatial_reference.data
-            coords2 = spatial_reference_shifted.data
+            if not tuple(image_abberation.scale) == tuple(spatial_reference.scale) == tuple(spatial_reference_shifted.scale) :
+                print(f"Scale is not uniform between selected layers.\nimage to correct : {tuple(image_abberation.scale)}\nreference points : {spatial_reference.scale}\npoints with abberation : {spatial_reference_shifted.scale}")
+
+            voxel_size = np.asarray(image_abberation.scale, dtype=int)
+            coords1 = np.asarray(spatial_reference.data)
+            coords2 = np.asarray(spatial_reference_shifted.data)
 
             if coords1.shape[1] == 4 :
                 coords1 = coords1[coords1[:,0] == location]
@@ -238,6 +233,10 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
             if coords2.shape[1] == 4 :
                 coords2 = coords2[coords2[:,0] == location]
                 coords2 = coords2[:,1:]
+            if len(voxel_size) == 4 :
+                voxel_size = voxel_size[1:]
+            self.voxel_size = tuple(voxel_size)
+            self.degree = degree
             
             coords1 = coords1 * voxel_size
             coords2 = coords2 * voxel_size
@@ -246,22 +245,33 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
             beads, dist = match_beads(
                 coords1= coords1,
                 coords2= coords2,
-                max_dist= int(max(voxel_size) * 25)
+                max_dist= voxel_size.max() * 25
             )
 
             print("beads : ",beads.shape)
             print("dist : ",dist.shape)
             print("Fitting model")
+
+            if "Optical Center" in self.viewer.layers :
+                assert hasattr(self.viewer.layers["Optical Center"], "optical_center")
+                optical_center = self.viewer.layers["Optical Center"].optical_center
+            else :
+                optical_center = None
+
+            print("optical center : ", optical_center)
+
             self.polynomial_features, self.model_x, self.model_y, self.model_z = fit_polynomial_transform_3d(
                                                 beads,
                                                 dist, 
-                                                degree=degree
+                                                degree=degree,
+                                                center=optical_center
                                                 )
             
             self.polynomial_features_inv, self.inv_model_x, self.inv_model_y, self.inv_model_z = fit_polynomial_transform_3d(
                                                 dist, 
                                                 beads,
-                                                degree=degree
+                                                degree=degree,
+                                                center=optical_center
                                                 )
             
             if image_abberation.data.ndim == 4 :
@@ -339,3 +349,78 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
             )
         
         return save_method
+
+@register_chromatic_widget
+class OpticalCenterSetter(NapariWidget) :
+    def __init__(self, viewer : Viewer, **_):
+        super().__init__()
+        self.viewer = viewer
+        self.point_layer = None
+        self.center = None
+        self.layer_name = "Optical Center"
+        self.listener = None
+
+    def _create_widget(self):
+
+        @magicgui(
+                auto_call=False,
+                call_button="Set optical center",
+                model_points_layer = {'label' : 'Points layer'}
+        )
+        def create_center_picker(
+            model_points_layer : Points
+                ) :
+
+            """Create a Points layer that enforces a single point for picking a center."""
+            
+            if self.layer_name in self.viewer.layers :
+                return self.point_layer
+            
+            center_layer = self.viewer.add_points(
+                ndim=model_points_layer.ndim,
+                size=20,
+                face_color='transparent',
+                blending ='additive',
+                border_color='gold',
+                symbol="cross",
+                name=self.layer_name,
+                scale = model_points_layer.scale,
+                units = model_points_layer.units,
+                metadata={'role': 'center_picker'}
+            )
+            center_layer = cast(Points,center_layer)
+            self.point_layer = center_layer
+            center_layer.optical_center = self.center
+
+            def _enforce_single_point(event):
+                layer : Points  = event.source
+
+                stop_listening()
+                if len(layer.data) > 1:
+                    # Keep only the most recently added point
+                    layer.data = layer.data[-1:]
+                    self.center = layer.data[0,-2:] #keep yx coordinates
+                    layer.refresh()
+                elif len(layer.data) == 0 :
+                    self.center = None
+                center_layer.optical_center = self.center
+                start_listening()
+
+            def start_listening() :
+                self.listener = center_layer.events.data.connect(_enforce_single_point)
+            def stop_listening() :
+                center_layer.events.data.disconnect(self.listener)
+                self.listener = None
+
+            start_listening()
+            self.viewer.layers.events.connect(self._on_layer_deletion)
+            
+            return center_layer
+        return create_center_picker
+
+    def get_optical_center(self) :
+        return self.center
+
+    def _on_layer_deletion(self) :
+        if not "Optical Center" in self.viewer.layers :
+            self.center = None

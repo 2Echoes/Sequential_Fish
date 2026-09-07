@@ -83,13 +83,13 @@ class ThresholdSelector(LoadWidget) :
         print("Computing filtered image.", end="", flush=True)
         self.filtered_image = _apply_log_filter(
             image=self.image,
-            voxel_size=self.voxel_size,
+            voxel_size=self.voxel_size if len(self.voxel_size) == 3 else self.voxel_size[1:],
             spot_radius=self.spot_radius,
             log_kernel_size= cast(tuple, self.kernel_size)
         )
         self.local_maxima = _local_maxima_mask(
             image_filtered=self.filtered_image,
-            voxel_size=self.voxel_size,
+            voxel_size=self.voxel_size if len(self.voxel_size) == 3 else self.voxel_size[1:],
             spot_radius=self.spot_radius,
             minimum_distance=cast(tuple, self.min_distance)
         )
@@ -201,7 +201,7 @@ class ThresholdSelector(LoadWidget) :
             spot_layer_args = {
                 'name' : f"{self.layer_name} detection",
                 'size': 10, 
-                'scale' : (1,) + scale if ndim == 4 else scale, 
+                'scale' : (1,) + scale if spots.ndim == 4 else scale, 
                 'face_color' : 'transparent', 
                 'border_color' : 'red', 
                 'symbol' : 'disc', 

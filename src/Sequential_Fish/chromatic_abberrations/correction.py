@@ -6,6 +6,15 @@ from sklearn.preprocessing import PolynomialFeatures
 from .calibration import calibration_exist, load_calibration
 from ..tools import get_voxel_size
 
+
+def _transform_input(coords: np.ndarray, voxel_size: np.ndarray, poly: PolynomialFeatures) -> np.ndarray:
+    """Build polynomial inputs for either a 3D or single-plane calibration."""
+    if poly.n_features_in_ == 2:
+        return coords[:, 1:] * voxel_size[1:]
+    if poly.n_features_in_ == 3:
+        return coords * voxel_size
+    raise ValueError(f"Unsupported calibration dimensionality: {poly.n_features_in_}")
+
 def apply_polynomial_transform_to_signal(
         image : np.ndarray, 
         poly : PolynomialFeatures, 
@@ -19,21 +28,20 @@ def apply_polynomial_transform_to_signal(
     zz, yy, xx = np.meshgrid(np.arange(z), np.arange(y), np.arange(x), indexing='ij')
     coords = np.stack([zz.ravel(), yy.ravel(), xx.ravel()], axis=1)
 
-    if isinstance(voxel_size, tuple) : voxel_size = np.array(voxel_size)
+    voxel_size = np.asarray(voxel_size)
 
-    X_poly = poly.transform(coords * voxel_size)
+    X_poly = poly.transform(_transform_input(coords, voxel_size, poly))
     if not model_z is None :
         print("correcting z") 
         new_z_nm = model_z.predict(X_poly)
     else :
         print("not correcting z")
-        new_z_nm = coords[:,0]
+        new_z_nm = coords[:, 0] * voxel_size[0]
     new_y_nm = model_y.predict(X_poly)
     new_x_nm = model_x.predict(X_poly)
 
     #convert back to pixel
-    if voxel_size.ndim == 1 : voxel_size = np.array([voxel_size])
-    new_coords_pixel = np.stack([new_z_nm, new_y_nm, new_x_nm], axis=0) / voxel_size.T
+    new_coords_pixel = np.stack([new_z_nm, new_y_nm, new_x_nm], axis=0) / voxel_size[:, None]
 
     warped = map_coordinates(image, new_coords_pixel, order=1, mode='reflect').reshape(z, y, x)
     return warped
@@ -50,9 +58,9 @@ def apply_polynomial_transform_spots(
     Correct chromatic abberrations for spots using pre-calibrated polynomial interpolation.
     """
 
-    print(coords.shape)
-
-    monosomes = poly.transform(coords * voxel_size)
+    coords = np.asarray(coords)
+    voxel_size = np.asarray(voxel_size)
+    monosomes = poly.transform(_transform_input(coords, voxel_size, poly))
     new_y_nm = model_y.predict(monosomes)
     new_x_nm = model_x.predict(monosomes)
     if not model_z is None :
@@ -77,11 +85,17 @@ def correct_Spots_dataframe(
     wavelength_list =  Detection['wavelength'].unique().tolist()
     for wv in wavelength_list :
         if int(wv) == int(reference_wavelength) : continue
-        if not calibration_exist(
-         reference_wavelength=reference_wavelength,
-         corrected_wavelength= wv
-        ) :
-         raise FileNotFoundError("No calibration found for reference wavelength : {0}nm and corrected wavelength: {1}nm. To configure new calibration use command 'python -m Sequential_Fish calibration'.".format(reference_wavelength, wv))
+        calibration_available = calibration_exist(
+            reference_wavelength=reference_wavelength,
+            corrected_wavelength=wv,
+        )
+        if not calibration_available:
+            raise FileNotFoundError(
+                "No calibration found for reference wavelength: "
+                f"{reference_wavelength}nm and corrected wavelength: {wv}nm. "
+                "To configure new calibration use command "
+                "'python -m Sequential_Fish calibration'."
+            )
     
     for wv in wavelength_list :
 

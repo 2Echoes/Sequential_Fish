@@ -20,13 +20,39 @@ def match_beads(coords1 : np.ndarray, coords2 : np.ndarray, max_dist=5):
 
     return coords1[matches], coords2[indices[matches, 0]]
 
-def fit_polynomial_transform_3d(src_points : np.ndarray, dst_points : np.ndarray, degree=2):
-    """Fit 3D polynomial regression mapping coords → dst."""
-    poly = PolynomialFeatures(degree)
-    X_poly = poly.fit_transform(src_points)
-    model_x = LinearRegression().fit(X_poly, dst_points[:, 2])  # x
-    model_y = LinearRegression().fit(X_poly, dst_points[:, 1])  # y
-    # model_z = LinearRegression().fit(X_poly, dst_points[:, 0])  # z
+def fit_polynomial_transform_3d(
+        src_points : np.ndarray, 
+        dst_points : np.ndarray, 
+        center : tuple[int,int] | None = None,
+        degree=2
+        ):
+    """Fit a z-uniform polynomial mapping from lateral coordinates to lateral coordinates."""
+    src_points = np.asarray(src_points)
+    dst_points = np.asarray(dst_points)
+    if src_points.ndim != 2 or src_points.shape[1] != 3:
+        raise ValueError("src_points must have shape (n_points, 3)")
+    if dst_points.shape != src_points.shape:
+        raise ValueError("src_points and dst_points must have the same shape")
+
+    # Extract lateral coordinates (y, x)
+    src_yx = src_points[:, 1:]
+    dst_yx = dst_points[:, 1:]
+
+    if center is not None:
+        print(True)
+        y0, x0 = center
+        # Center both source and destination coordinates around (y0, x0)
+        src_yx = src_yx - np.array([y0, x0])
+        # dst_yx = dst_yx - np.array([y0, x0])
+
+    # Generate polynomial features WITHOUT a bias term
+    poly = PolynomialFeatures(degree=degree, include_bias=False)
+    X_poly = poly.fit_transform(src_yx)
+
+    # Fit models WITHOUT an intercept
+    model_x = LinearRegression(fit_intercept=False).fit(X_poly, dst_yx[:, 0])  # x
+    model_y = LinearRegression(fit_intercept=False).fit(X_poly, dst_yx[:, 1])  # y
+
     return poly, model_x, model_y, None
 
 def _load_calibration_index() -> dict :
@@ -64,7 +90,7 @@ def update_calibration_index(
     index = _load_calibration_index()
     index[file_index] = filename
 
-    with open(CALIBRATION_FOLDER + '/index.json', 'w') as index_file:
+    with open(CALIBRATION_FOLDER + '/index.json', 'w', encoding='utf-8') as index_file:
         json.dump(index, index_file, indent=2)
     
 def load_calibration(
@@ -113,7 +139,7 @@ def save_fit_model(
     if not os.path.isdir(CALIBRATION_FOLDER) : os.makedirs(CALIBRATION_FOLDER)
     filename = CALIBRATION_FOLDER + f"/{reference_wavelength}_{corrected_wavelength}_{timestamp}.joblib" 
 
-    res = joblib.dump({
+    joblib.dump({
         'x_fit' : x_fit,
         'y_fit' : y_fit,
         'z_fit' : z_fit,
