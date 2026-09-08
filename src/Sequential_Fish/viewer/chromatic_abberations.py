@@ -87,8 +87,6 @@ class SpotCorrector(ChromaticWidget) :
                     poly=calibration['polynomial_features_inv'],
                     model_x = calibration['x_inv_fit'],            
                     model_y = calibration['y_inv_fit'],
-                    model_z = calibration['z_inv_fit'],       
-                    voxel_size= np.array(self.voxel_size, dtype=int)
                 ).round().astype(int)
             ],axis=1)
 
@@ -139,8 +137,6 @@ class SignalCorrector(ChromaticWidget) :
                 poly=calibration['polynomial_features'],
                 model_x = calibration['x_fit'],            
                 model_y = calibration['y_fit'],
-                model_z = calibration['z_fit'],       
-                voxel_size= np.array(self.voxel_size, dtype=int) 
             ).round().astype(int) for fov in tqdm(cast(np.ndarray, Signal.data), desc="correcting chromatic aberrations", total=len(cast(np.ndarray, Signal.data)))]
                 )
             elif Signal.data.ndim == 3 :
@@ -149,8 +145,6 @@ class SignalCorrector(ChromaticWidget) :
                     poly=calibration['polynomial_features'],
                     model_x = calibration['x_fit'],            
                     model_y = calibration['y_fit'],
-                    model_z = calibration['z_fit'],       
-                    voxel_size= np.array(self.voxel_size, dtype=int) 
                 ).round().astype(int)
 
             else :
@@ -209,6 +203,7 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
                 spatial_reference_shifted={'label' : 'Points with aberrations'},
                 location = {"min" : 0},
                 degree={'label' : 'Degree'},
+                pixel_range = {"min" : 0, "value" : 5},
                 auto_call=False,
                 call_button= "Correct chromatic aberrations",
         )
@@ -218,12 +213,12 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
             spatial_reference_shifted : Points,
             location : int,
             degree : int = self.degree,
+            pixel_range : int = 5,
         ) :
 
             if not tuple(image_abberation.scale) == tuple(spatial_reference.scale) == tuple(spatial_reference_shifted.scale) :
                 print(f"Scale is not uniform between selected layers.\nimage to correct : {tuple(image_abberation.scale)}\nreference points : {spatial_reference.scale}\npoints with abberation : {spatial_reference_shifted.scale}")
 
-            voxel_size = np.asarray(image_abberation.scale, dtype=int)
             coords1 = np.asarray(spatial_reference.data)
             coords2 = np.asarray(spatial_reference_shifted.data)
 
@@ -233,24 +228,13 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
             if coords2.shape[1] == 4 :
                 coords2 = coords2[coords2[:,0] == location]
                 coords2 = coords2[:,1:]
-            if len(voxel_size) == 4 :
-                voxel_size = voxel_size[1:]
-            self.voxel_size = tuple(voxel_size)
             self.degree = degree
-            
-            coords1 = coords1 * voxel_size
-            coords2 = coords2 * voxel_size
-
 
             beads, dist = match_beads(
                 coords1= coords1,
                 coords2= coords2,
-                max_dist= voxel_size.max() * 25
+                max_dist= pixel_range
             )
-
-            print("beads : ",beads.shape)
-            print("dist : ",dist.shape)
-            print("Fitting model")
 
             if "Optical Center" in self.viewer.layers :
                 assert hasattr(self.viewer.layers["Optical Center"], "optical_center")
@@ -281,8 +265,6 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
                 poly=self.polynomial_features,
                 model_x=self.model_x,
                 model_y=self.model_y,
-                model_z=self.model_z,
-                voxel_size=voxel_size
             ).round().astype(int) for fov in tqdm(cast(np.ndarray, image_abberation.data), desc="correcting chromatic aberrations", total=len(cast(np.ndarray, image_abberation.data)))]
                 )
             elif image_abberation.data.ndim == 3 :
@@ -291,8 +273,6 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
                         poly=self.polynomial_features,
                         model_x=self.model_x,
                         model_y=self.model_y,
-                        model_z=self.model_z,
-                        voxel_size=voxel_size
                     ).round().astype(int)
             else :
                 raise AssertionError
@@ -341,7 +321,6 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
                 x_inv_fit=self.inv_model_x,
                 y_inv_fit=self.inv_model_y,
                 z_inv_fit=self.inv_model_z,
-                voxel_size=self.voxel_size,
                 degree=self.degree,
                 timestamp= self.timestamp,
                 corrected_wavelength=corrected_wavelength,
@@ -350,7 +329,6 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
         
         return save_method
 
-@register_chromatic_widget
 class OpticalCenterSetter(NapariWidget) :
     def __init__(self, viewer : Viewer, **_):
         super().__init__()

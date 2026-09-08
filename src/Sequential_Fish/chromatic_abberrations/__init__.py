@@ -13,5 +13,4 @@ from .correction import correct_Spots_dataframe
 from .constant import CALIBRATION_FOLDER
 
 def run(run_path, *args) :
-    from .launch_calibration import main
-    main(run_path)
+    raise NotImplementedError("This script was moved to the viewer module")

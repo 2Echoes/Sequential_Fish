@@ -38,20 +38,26 @@ def fit_polynomial_transform_3d(
     src_yx = src_points[:, 1:]
     dst_yx = dst_points[:, 1:]
 
+    weights = np.ones(len(dst_yx), dtype=int)
+
     if center is not None:
-        print(True)
+        print("using center : ", True)
         y0, x0 = center
-        # Center both source and destination coordinates around (y0, x0)
-        src_yx = src_yx - np.array([y0, x0])
-        # dst_yx = dst_yx - np.array([y0, x0])
+        src_yx = np.concat([np.array([[y0,x0]], dtype=src_yx.dtype), src_yx], axis=0)
+        dst_yx = np.concat([np.array([[y0,x0]], dtype=dst_yx.dtype), dst_yx], axis=0)
+        weights = np.concat([np.array([len(dst_yx)*100], dtype=weights.dtype), weights], axis=0)
+
+        print("src_yx : ", src_yx.shape)
+        print("dst_yx : ", dst_yx.shape)
+        print("weights : ", weights.shape)
 
     # Generate polynomial features WITHOUT a bias term
-    poly = PolynomialFeatures(degree=degree, include_bias=False)
+    poly = PolynomialFeatures(degree=degree, include_bias=True)
     X_poly = poly.fit_transform(src_yx)
 
     # Fit models WITHOUT an intercept
-    model_x = LinearRegression(fit_intercept=False).fit(X_poly, dst_yx[:, 0])  # x
-    model_y = LinearRegression(fit_intercept=False).fit(X_poly, dst_yx[:, 1])  # y
+    model_x = LinearRegression(fit_intercept=False).fit(X_poly, dst_yx[:, 1], sample_weight= weights)  # x
+    model_y = LinearRegression(fit_intercept=False).fit(X_poly, dst_yx[:, 0], sample_weight= weights)  # y
 
     return poly, model_x, model_y, None
 
@@ -129,7 +135,6 @@ def save_fit_model(
         x_inv_fit,
         y_inv_fit,
         z_inv_fit,
-        voxel_size,
         degree,
         reference_wavelength,
         corrected_wavelength,
@@ -148,7 +153,6 @@ def save_fit_model(
         'x_inv_fit' : x_inv_fit,
         'y_inv_fit' : y_inv_fit,
         'z_inv_fit' : z_inv_fit,
-        'voxel_size' : voxel_size,
         'degree' : degree,
         'reference_wavelength' : reference_wavelength,
         'corrected_wavelength' : corrected_wavelength,
