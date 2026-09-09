@@ -6,18 +6,17 @@ import os
 import logging
 
 import pandas as pd
+import numpy as np
 from ..tools import safe_merge_no_duplicates
 from ..chromatic_abberrations import correct_Spots_dataframe
 from ..settings import AnalysisParameters
-from .colocalisation import colocalisation_truth_df
+from .colocalisation import colocalisation_truth_df, compute_z_score_frame, create_coloc_rate_expectancy, _compute_cell_distribution_populations
 
 
 def Spots_post_processing(
         Spots : pd.DataFrame,
         Cell : pd.DataFrame,
         Detection : pd.DataFrame,
-        Acquisition : pd.DataFrame,
-        Gene_map : pd.DataFrame,
         reference_wavelength : int | None = None
 ) :
     """
@@ -32,15 +31,6 @@ def Spots_post_processing(
         Cell=Cell,
         Detection=Detection,
     )
-
-    Spots = _spots_merge_data(
-        Spots=Spots,
-        Acquisition=Acquisition,
-        Detection=Detection,
-        Gene_map=Gene_map,
-        Cell=Cell
-    )
-
 
     if not reference_wavelength is None :
         logging.info(
@@ -137,15 +127,18 @@ def _spots_merge_data(
     )
 
 
-    return Spots
+    return Spots, Detection
 
 def apply_user_configuration(
         Gene_map : pd.DataFrame,
         Detection : pd.DataFrame,
         Spots : pd.DataFrame,
+        Cell : pd.DataFrame,
+        Acquisition : pd.DataFrame,
         rename_rule,
         filter_rna,
-        filter_cycle
+        filter_cycle,
+        foci_rnas,
 ) :
     """
     Apply user configuration : renaming targets, rna filter, cycle filter.
@@ -161,13 +154,27 @@ def apply_user_configuration(
         rule=rename_rule
         )
 
-    logging.info(f"Removing RNAs from analysis : {filter_rna}")
-    Detection, Spots = _remove_rna(
-        Gene_map=Gene_map,
-        filter_rna=filter_rna,
+    Spots,Detection = _spots_merge_data(
+        Spots=Spots,
+        Acquisition=Acquisition,
         Detection=Detection,
-        Spots=Spots
+        Gene_map=Gene_map,
+        Cell=Cell
     )
+
+    if not foci_rnas is None :
+        logging.info(f"Adding free and clustered populations for rnas : {foci_rnas}")
+
+        Spots = _add_foci_to_analysis(
+            Spots,
+            foci_rnas=foci_rnas
+        )
+
+    logging.info(f"Removing RNAs from analysis : {filter_rna}")
+
+    if not filter_rna is None :
+        Detection = Detection.loc[~Detection['target'].isin(filter_rna)]
+        Spots = Spots.loc[~Spots['target'].isin(filter_rna)]
 
     logging.info(f"Removing cycles from analysis using rule : {filter_cycle}")
     Detection, Spots = _remove_cycles(
@@ -176,6 +183,7 @@ def apply_user_configuration(
         Detection=Detection,
         Spots=Spots
     )
+
 
     return Gene_map, Detection, Spots
 
@@ -240,10 +248,11 @@ def _cache_colocalization_data(
     run_coloc_truth_table = False
 
     cached_data_path = os.path.join(run_path,"result_tables", "coloc_truth_table.feather")
-    cache_attr = ["coloc_distance", "FILTER_CYCLE", "RENAME_RULE"] # cached data contains all run RNAs on purpose they are filtered when loading the table and using it for figures.
+    zscore_path = os.path.join(run_path,"analysis","data","coloc_zscores.csv")
+    cache_attr = ["coloc_distance", "FILTER_CYCLE", "RENAME_RULE","foci_rnas"] # cached data contains all run RNAs on purpose they are filtered when loading the table and using it for figures.
     if os.path.isfile(cached_data_path) : 
-        df = pd.read_feather(cached_data_path, columns=["spot_id"])
-        attrs : dict = df.attrs
+        coloc_truth_df = pd.read_feather(cached_data_path, columns=["spot_id"])
+        attrs : dict = coloc_truth_df.attrs
 
         for key in cache_attr : 
             assert key in attrs.keys(), f"{key} was not found in cache metadata."
@@ -252,64 +261,170 @@ def _cache_colocalization_data(
     else :
         run_coloc_truth_table = True
 
+    if not os.path.isfile(zscore_path) :
+        run_coloc_truth_table = True
+
     if run_coloc_truth_table :
-        logging.info("Update in parameters, computing co-localization truth df.")
+        logging.info("Update in parameters, computing co-localization truth coloc_truth_df.")
         logging.disable(logging.INFO)
-        df = _create_cache_colocalization_truth_table(
-            run_path, 
-            colocalization_distance=analysis_parameters.coloc_distance, 
-            cycle_filter_rule=analysis_parameters.FILTER_CYCLE,
+
+        result_path = os.path.join(run_path,"result_tables")
+        Acquisition = pd.read_feather(os.path.join(result_path,"Acquisition.feather"))
+        Detection = pd.read_feather(os.path.join(result_path,"Detection.feather"))
+        Gene_map = pd.read_feather(os.path.join(result_path,"Gene_map.feather"))
+        Spots = pd.read_feather(os.path.join(result_path,"Spots.feather"))
+        Cell = pd.read_feather(os.path.join(result_path,"Cell.feather"))
+
+        Spots = Spots_post_processing(
+            Spots=Spots,
+            Cell=Cell,
+            Detection=Detection,
+            reference_wavelength=analysis_parameters.reference_wavelength
+        )
+
+        Gene_map, Detection, Spots = apply_user_configuration(
+            Gene_map=Gene_map,
+            Detection=Detection,
+            Spots=Spots,
+            Cell=Cell,
+            Acquisition=Acquisition,
             rename_rule=analysis_parameters.RENAME_RULE,
-            reference_wv=analysis_parameters.reference_wavelength
+            filter_cycle=analysis_parameters.FILTER_CYCLE,
+            filter_rna=None,
+            foci_rnas=analysis_parameters.foci_rnas
+        )
+
+        coloc_truth_df = _create_cache_colocalization(
+            Spots=Spots,
+            colocalization_distance=analysis_parameters.coloc_distance, 
             )
 
+        zscore_df = _create_zscore_table(
+            Spots=Spots,
+            Cell=Cell,
+            coloc_truth_df=coloc_truth_df,
+            voxel_size=Detection["voxel_size"].at[0],
+            colocalisation_distance=analysis_parameters.coloc_distance
+        )
+
         for key in cache_attr :
-            df.attrs[key] = getattr(analysis_parameters,key)
-        df.to_feather(cached_data_path)
+            coloc_truth_df.attrs[key] = getattr(analysis_parameters,key)
+        coloc_truth_df.to_feather(cached_data_path)
+
+        os.makedirs(os.path.dirname(zscore_path),exist_ok=True)
+        zscore_df.to_csv(zscore_path, sep=";")
+
         logging.disable(logging.NOTSET)
         logging.info("cache update completed.")
         
 
-def _create_cache_colocalization_truth_table(
-        run_path : str, 
+def _create_cache_colocalization(
+        Spots : pd.DataFrame,
         colocalization_distance : int, 
-        cycle_filter_rule : dict,
-        rename_rule : dict,
-        reference_wv : int
 ) -> pd.DataFrame :
-
-    result_path = os.path.join(run_path,"result_tables")
-    Acquisition = pd.read_feather(os.path.join(result_path,"Acquisition.feather"))
-    Detection = pd.read_feather(os.path.join(result_path,"Detection.feather"))
-    Gene_map = pd.read_feather(os.path.join(result_path,"Gene_map.feather"))
-    Spots = pd.read_feather(os.path.join(result_path,"Spots.feather"))
-    Cell = pd.read_feather(os.path.join(result_path,"Cell.feather"))
-
-    Gene_map, Detection, Spots = apply_user_configuration(
-        Gene_map=Gene_map,
-        Detection=Detection,
-        Spots=Spots,
-        rename_rule=rename_rule,
-        filter_cycle=cycle_filter_rule,
-        filter_rna=None
-    )
-
-    Spots = Spots_post_processing(
-        Spots=Spots,
-        Cell=Cell,
-        Detection=Detection,
-        Acquisition=Acquisition,
-        Gene_map=Gene_map,
-        reference_wavelength=reference_wv
-    )
-
-    Spots.info()
 
     coloc_truth_df= colocalisation_truth_df(
         Spots=Spots,
         colocalisation_distance=colocalization_distance
     )
 
-    coloc_truth_df.info()
+    coloc_truth_df = safe_merge_no_duplicates(
+        coloc_truth_df,
+        Spots,
+        on="spot_id",
+        keys="cell_id"
+    )
 
     return coloc_truth_df
+
+
+def _create_zscore_table(
+        Spots : pd.DataFrame,
+        Cell : pd.DataFrame,
+        coloc_truth_df : pd.DataFrame,
+        voxel_size : tuple,
+        colocalisation_distance : int,
+) :
+
+    rna_list = Spots["target"].unique().tolist()
+
+    coloc_rates, selfcoloc_rates = create_coloc_rate_expectancy(
+        Spots=Spots,
+        Cell=Cell,
+        voxel_size=voxel_size,
+        colocalisation_distance=colocalisation_distance,
+        RNA_list=rna_list
+    )
+
+    # Model values for expectancy and std
+    abundancies = _compute_cell_distribution_populations(Spots)
+    cell_ids = coloc_rates.index
+    multi_index = pd.MultiIndex.from_product([rna_list, abundancies.index]) #one line per couple (rna,cell_id)
+    multi_index.names = ['target','cell_id']
+
+    ## Initialise empty dataframes for expectancy/std
+    expected_event_count = pd.DataFrame(columns= pd.Index(rna_list), index=multi_index, dtype=float)
+    expected_event_count_std = pd.DataFrame(columns= pd.Index(rna_list), index=multi_index, dtype=float)
+
+    ## Filling
+    for rna in rna_list :
+        prod = coloc_rates.multiply(abundancies[rna],axis=0)
+        product_index = pd.MultiIndex.from_product([[rna], cell_ids])
+
+        ###Expectancy
+        expected_event_count.loc[product_index, :] = prod.values # E = n*p
+        expected_event_count.loc[rna,[rna]] = (selfcoloc_rates[rna] * abundancies[rna]).values # Correction for selfcoloc
+
+        ###Std
+        prod = coloc_rates.multiply(abundancies[rna],axis=0).multiply((1-coloc_rates),axis=0) #std = sqrt(np(1-p))
+        prod = prod.apply(np.sqrt)
+        product_index = pd.MultiIndex.from_product([[rna], cell_ids])
+        expected_event_count_std.loc[product_index, :] = prod.values
+
+    # Coloc measurements
+    coloc_truth_df = pd.merge( #Filter spots belonging to RNA distributions removed in user configuration
+        coloc_truth_df,
+        Spots.loc[:,["spot_id"]],
+        on='spot_id',
+    )
+
+    measure_coloc_events = coloc_truth_df.groupby(['target','cell_id'])[rna_list].sum()
+    assert not measure_coloc_events.isna().any().any(), "Analysis shouldn't yield nan at this point. Make sure that that previously nan values are safe to discard and discard them prior to this point." #Then safe to ignore nan values as nan values comes from 0 abundancies, ie cell without spot which should be discarded when comptuting co-localization statistic.
+    coloc_rates = measure_coloc_events.divide(abundancies).replace(np.inf,np.nan).replace(-np.inf,np.nan)
+    
+    #Zscore computation
+    zscore_frame = compute_z_score_frame(
+        measured_colocalisation_events=measure_coloc_events,
+        expected_colocalisation_events=expected_event_count,
+        expected_standard_deviation= expected_event_count_std,
+    )
+    zscore_frame = zscore_frame.groupby('target',level=0).median()
+
+    return zscore_frame
+
+
+def _add_foci_to_analysis(
+    Spots : pd.DataFrame, 
+    foci_rnas : list[str]
+    ) :
+    """
+    Separate part of Spots data to analyse spots by populations : clustered and free.
+    """
+
+    foci_spots = Spots.loc[(Spots["target"].isin(foci_rnas)) & (Spots["population"] == "clustered")]
+    foci_spots.loc[:,["target"]] = foci_spots["target"].str.cat(['_clustered']*len(foci_spots))
+    free_spots = Spots.loc[(Spots["target"].isin(foci_rnas)) & (Spots["population"] == "free")]
+    free_spots.loc[:,["target"]] = free_spots["target"].str.cat(['_free']*len(free_spots))
+
+    free_spots["spot_id"] = np.arange(1, len(free_spots)+1) + Spots["spot_id"].max()
+    foci_spots["spot_id"] = np.arange(1, len(foci_spots)+1) + free_spots["spot_id"].max()
+
+    Spots = pd.concat([
+        Spots,
+        foci_spots,
+        free_spots
+    ], ignore_index=True)
+
+
+
+    return Spots

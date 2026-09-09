@@ -164,8 +164,7 @@ def main(run_path) :
         )
 
     #Scale bar
-    Viewer.scale_bar.visible = True
-    Viewer.scale_bar.unit = 'nm'
+    Viewer.canvas.overlays.scale_bar.visible = True
 
     napari.run()
 

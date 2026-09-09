@@ -63,6 +63,7 @@ class ThresholdSelector(LoadWidget) :
         
         self.viewer = viewer
         self.voxel_size = voxel_size
+        self.units = "nm"
         self.dim = len(voxel_size)
         self.default_threshold = default_threshold
         self.spot_radius = default_spot_size
@@ -82,13 +83,13 @@ class ThresholdSelector(LoadWidget) :
         print("Computing filtered image.", end="", flush=True)
         self.filtered_image = _apply_log_filter(
             image=self.image,
-            voxel_size=self.voxel_size,
+            voxel_size=self.voxel_size if len(self.voxel_size) == 3 else self.voxel_size[1:],
             spot_radius=self.spot_radius,
             log_kernel_size= cast(tuple, self.kernel_size)
         )
         self.local_maxima = _local_maxima_mask(
             image_filtered=self.filtered_image,
-            voxel_size=self.voxel_size,
+            voxel_size=self.voxel_size if len(self.voxel_size) == 3 else self.voxel_size[1:],
             spot_radius=self.spot_radius,
             minimum_distance=cast(tuple, self.min_distance)
         )
@@ -139,6 +140,9 @@ class ThresholdSelector(LoadWidget) :
                 
             elif self.viewer.layers.selection.active.name != self.layer_name :
                 self.image = self.viewer.layers.selection.active.data
+                self.voxel_size = tuple(self.viewer.layers.selection.active.scale)
+                self.units = self.viewer.layers.selection.active.units
+                print("selected image scale : ",self.voxel_size)
                 self.layer_name = self.viewer.layers.selection.active.name
                 self.do_update = True
             
@@ -191,16 +195,19 @@ class ThresholdSelector(LoadWidget) :
                 )[0]
 
             scale = self.voxel_size
+
+            print("self.voxel_size : ", self.voxel_size)
     
             spot_layer_args = {
                 'name' : f"{self.layer_name} detection",
                 'size': 10, 
-                'scale' : (1,) + scale if ndim == 4 else scale, 
+                'scale' : (1,) + scale if spots.ndim == 4 else scale, 
                 'face_color' : 'transparent', 
                 'border_color' : 'red', 
                 'symbol' : 'disc', 
                 'opacity' : 0.7, 
                 'blending' : 'translucent', 
+                'units' : self.units,
                 'visible' : True,
                 }
 
@@ -210,6 +217,7 @@ class ThresholdSelector(LoadWidget) :
                 "blending" : 'additive',
                 "name" : f"{self.layer_name} filtered image",
                 "projection_mode" : "max",
+                'units' : self.units,
             }
 
             print(f"Thresholding done ({threshold})")

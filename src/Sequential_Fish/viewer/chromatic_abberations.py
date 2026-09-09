@@ -28,7 +28,6 @@ class ChromaticWidget(ThreadedWidget) :
         super().__init__(viewer=viewer)
 
 
-
 _CHROMATIC_WIDGETS : 'list[NapariWidget]' = []
 def register_chromatic_widget(cls) :
     _CHROMATIC_WIDGETS.append(cls)
@@ -57,7 +56,10 @@ def initiate_chromatic_widgets(
 
 @register_chromatic_widget
 class SpotCorrector(ChromaticWidget) :
+<<<<<<< HEAD
 
+=======
+>>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
     def _create_widget(self):
         
         @magicgui(
@@ -73,6 +75,7 @@ class SpotCorrector(ChromaticWidget) :
             if not calibration_exist(self.run_path, reference_wavelength, corrected_wavelength=layer_wavelenth) :
                 raise UserInputError(f"Not calibration was found for reference wavelength : {reference_wavelength}nm and layer wavelength : {layer_wavelenth}")
 
+<<<<<<< HEAD
             calibration = load_calibration(self.run_path, reference_wavelength=reference_wavelength, corrected_wavelength=layer_wavelenth)
             new_coordinates = apply_polynomial_transform_spots(
                 coords=Spots.data,
@@ -82,6 +85,27 @@ class SpotCorrector(ChromaticWidget) :
                 model_z = calibration['z_inv_fit'],       
                 voxel_size= np.array(self.voxel_size, dtype=int) 
             ).round().astype(int)
+=======
+            calibration = load_calibration(reference_wavelength=reference_wavelength, corrected_wavelength=layer_wavelenth)
+
+            if Spots.data.ndim == 3 :
+                spot_array = np.concat([
+                    np.zeros(len(Spots.data)).reshape(-1,1),
+                    Spots.data,
+                    ])
+            else :
+                spot_array = Spots.data
+
+            new_coordinates = np.concat([
+                spot_array[:,0].reshape(-1,1),
+                apply_polynomial_transform_spots(
+                    coords=spot_array[:,1:], #Selecting spots belonging to one specific fov
+                    poly=calibration['polynomial_features_inv'],
+                    model_x = calibration['x_inv_fit'],            
+                    model_y = calibration['y_inv_fit'],
+                ).round().astype(int)
+            ],axis=1)
+>>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
 
             res = LayerDataTuple((
                 new_coordinates,
@@ -94,6 +118,8 @@ class SpotCorrector(ChromaticWidget) :
                     "border_color" : Spots.border_color,
                     "symbol" : Spots.symbol,
                     "scale" : Spots.scale,
+                    'units' : "nm",
+                    'ndim' : 4,
                 },
                 'Points'
             ))
@@ -104,7 +130,10 @@ class SpotCorrector(ChromaticWidget) :
 
 @register_chromatic_widget
 class SignalCorrector(ChromaticWidget) :
+<<<<<<< HEAD
 
+=======
+>>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
     def _create_widget(self):
         
         @magicgui(
@@ -129,8 +158,6 @@ class SignalCorrector(ChromaticWidget) :
                 poly=calibration['polynomial_features'],
                 model_x = calibration['x_fit'],            
                 model_y = calibration['y_fit'],
-                model_z = calibration['z_fit'],       
-                voxel_size= np.array(self.voxel_size, dtype=int) 
             ).round().astype(int) for fov in tqdm(cast(np.ndarray, Signal.data), desc="correcting chromatic aberrations", total=len(cast(np.ndarray, Signal.data)))]
                 )
             elif Signal.data.ndim == 3 :
@@ -139,8 +166,6 @@ class SignalCorrector(ChromaticWidget) :
                     poly=calibration['polynomial_features'],
                     model_x = calibration['x_fit'],            
                     model_y = calibration['y_fit'],
-                    model_z = calibration['z_fit'],       
-                    voxel_size= np.array(self.voxel_size, dtype=int) 
                 ).round().astype(int)
 
             else :
@@ -158,6 +183,7 @@ class SignalCorrector(ChromaticWidget) :
                     "colormap" : Signal.colormap,
                     "contrast_limits" : Signal.contrast_limits,
                     "gamma" : Signal.gamma,
+                    'units' : "nm",
                 },
                 'Image'
             ))
@@ -178,7 +204,11 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
         self.inv_model_x = LinearRegression()
         self.inv_model_y = LinearRegression()
         self.inv_model_z = LinearRegression()
+<<<<<<< HEAD
         self.voxel_size = (1,1,1)
+=======
+        self.calibration_folder = CALIBRATION_FOLDER
+>>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
         self.degree = 2
         self.timestamp = get_datetime()
         self.save_widget = self._create_save_widget()
@@ -198,6 +228,7 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
                 spatial_reference_shifted={'label' : 'Points with aberrations'},
                 location = {"min" : 0},
                 degree={'label' : 'Degree'},
+                pixel_range = {"min" : 0, "value" : 5},
                 auto_call=False,
                 call_button= "Correct chromatic aberrations",
         )
@@ -207,16 +238,14 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
             spatial_reference_shifted : Points,
             location : int,
             degree : int = self.degree,
+            pixel_range : int = 5,
         ) :
-            
-            voxel_size = spatial_reference.scale
-            if len(voxel_size) == 4 :
-                voxel_size = voxel_size[1:]
-            self.voxel_size = tuple([int(v) for v in voxel_size]) # save as reference if user save calibration
 
-            #Convert pixel coordinates to nm to account for anisotropy
-            coords1 = spatial_reference.data
-            coords2 = spatial_reference_shifted.data
+            if not tuple(image_abberation.scale) == tuple(spatial_reference.scale) == tuple(spatial_reference_shifted.scale) :
+                print(f"Scale is not uniform between selected layers.\nimage to correct : {tuple(image_abberation.scale)}\nreference points : {spatial_reference.scale}\npoints with abberation : {spatial_reference_shifted.scale}")
+
+            coords1 = np.asarray(spatial_reference.data)
+            coords2 = np.asarray(spatial_reference_shifted.data)
 
             if coords1.shape[1] == 4 :
                 coords1 = coords1[coords1[:,0] == location]
@@ -224,27 +253,34 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
             if coords2.shape[1] == 4 :
                 coords2 = coords2[coords2[:,0] == location]
                 coords2 = coords2[:,1:]
-            
-            coords1 = coords1 * voxel_size
-            coords2 = coords2 * voxel_size
-
+            self.degree = degree
 
             beads, dist = match_beads(
                 coords1= coords1,
                 coords2= coords2,
-                max_dist= int(max(voxel_size) * 4)
+                max_dist= pixel_range
             )
+
+            if "Optical Center" in self.viewer.layers :
+                assert hasattr(self.viewer.layers["Optical Center"], "optical_center")
+                optical_center = self.viewer.layers["Optical Center"].optical_center
+            else :
+                optical_center = None
+
+            print("optical center : ", optical_center)
 
             self.polynomial_features, self.model_x, self.model_y, self.model_z = fit_polynomial_transform_3d(
                                                 beads,
                                                 dist, 
-                                                degree=degree
+                                                degree=degree,
+                                                center=optical_center
                                                 )
             
             self.polynomial_features_inv, self.inv_model_x, self.inv_model_y, self.inv_model_z = fit_polynomial_transform_3d(
                                                 dist, 
                                                 beads,
-                                                degree=degree
+                                                degree=degree,
+                                                center=optical_center
                                                 )
             
             if image_abberation.data.ndim == 4 :
@@ -254,8 +290,6 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
                 poly=self.polynomial_features,
                 model_x=self.model_x,
                 model_y=self.model_y,
-                model_z=self.model_z,
-                voxel_size=voxel_size
             ).round().astype(int) for fov in tqdm(cast(np.ndarray, image_abberation.data), desc="correcting chromatic aberrations", total=len(cast(np.ndarray, image_abberation.data)))]
                 )
             elif image_abberation.data.ndim == 3 :
@@ -264,8 +298,6 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
                         poly=self.polynomial_features,
                         model_x=self.model_x,
                         model_y=self.model_y,
-                        model_z=self.model_z,
-                        voxel_size=voxel_size
                     ).round().astype(int)
             else :
                 raise AssertionError
@@ -278,6 +310,7 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
                     "scale" : image_abberation.scale,
                     "projection_mode" : image_abberation.projection_mode,
                     "colormap" : image_abberation.colormap,
+                    'units' : "nm",
                     "contrast_limits" : image_abberation.contrast_limits,
                     "gamma" : image_abberation.gamma,},
                 "Image"
@@ -314,7 +347,6 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
                 x_inv_fit=self.inv_model_x,
                 y_inv_fit=self.inv_model_y,
                 z_inv_fit=self.inv_model_z,
-                voxel_size=self.voxel_size,
                 degree=self.degree,
                 timestamp= self.timestamp,
                 corrected_wavelength=corrected_wavelength,
@@ -322,3 +354,77 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
             )
         
         return save_method
+
+class OpticalCenterSetter(NapariWidget) :
+    def __init__(self, viewer : Viewer, **_):
+        super().__init__()
+        self.viewer = viewer
+        self.point_layer = None
+        self.center = None
+        self.layer_name = "Optical Center"
+        self.listener = None
+
+    def _create_widget(self):
+
+        @magicgui(
+                auto_call=False,
+                call_button="Set optical center",
+                model_points_layer = {'label' : 'Points layer'}
+        )
+        def create_center_picker(
+            model_points_layer : Points
+                ) :
+
+            """Create a Points layer that enforces a single point for picking a center."""
+            
+            if self.layer_name in self.viewer.layers :
+                return self.point_layer
+            
+            center_layer = self.viewer.add_points(
+                ndim=model_points_layer.ndim,
+                size=20,
+                face_color='transparent',
+                blending ='additive',
+                border_color='gold',
+                symbol="cross",
+                name=self.layer_name,
+                scale = model_points_layer.scale,
+                units = model_points_layer.units,
+                metadata={'role': 'center_picker'}
+            )
+            center_layer = cast(Points,center_layer)
+            self.point_layer = center_layer
+            center_layer.optical_center = self.center
+
+            def _enforce_single_point(event):
+                layer : Points  = event.source
+
+                stop_listening()
+                if len(layer.data) > 1:
+                    # Keep only the most recently added point
+                    layer.data = layer.data[-1:]
+                    self.center = layer.data[0,-2:] #keep yx coordinates
+                    layer.refresh()
+                elif len(layer.data) == 0 :
+                    self.center = None
+                center_layer.optical_center = self.center
+                start_listening()
+
+            def start_listening() :
+                self.listener = center_layer.events.data.connect(_enforce_single_point)
+            def stop_listening() :
+                center_layer.events.data.disconnect(self.listener)
+                self.listener = None
+
+            start_listening()
+            self.viewer.layers.events.connect(self._on_layer_deletion)
+            
+            return center_layer
+        return create_center_picker
+
+    def get_optical_center(self) :
+        return self.center
+
+    def _on_layer_deletion(self) :
+        if not "Optical Center" in self.viewer.layers :
+            self.center = None

@@ -54,48 +54,44 @@ def run(run_path,*args) :
     Gene_map = pd.read_feather(run_path + "/result_tables/Gene_map.feather")
     Cell = pd.read_feather(run_path + "/result_tables/Cell.feather")
 
-    #User defined filters
-    Gene_map, Detection, Spots = apply_user_configuration(
-        Gene_map=Gene_map,
-        Detection=Detection,
-        Spots=Spots,
-        rename_rule=analysis_parameters.RENAME_RULE,
-        filter_cycle=analysis_parameters.FILTER_CYCLE,
-        filter_rna=analysis_parameters.FILTER_RNA
-    )
-
     #Post-processing
     Spots = Spots_post_processing(
         Spots=Spots,
         Cell=Cell,
         Detection=Detection,
-        Acquisition=Acquisition,
-        Gene_map=Gene_map,
         reference_wavelength = analysis_parameters.reference_wavelength
     )
 
-    # Call to analysis submodules
+    #User defined filters
+    Gene_map, Detection, Spots = apply_user_configuration(
+        Gene_map=Gene_map,
+        Detection=Detection,
+        Cell=Cell,
+        Spots=Spots,
+        Acquisition=Acquisition,
+        rename_rule=analysis_parameters.RENAME_RULE,
+        filter_cycle=analysis_parameters.FILTER_CYCLE,
+        filter_rna= analysis_parameters.FILTER_RNA,
+        foci_rnas=analysis_parameters.foci_rnas
+    )
 
+    # Call to analysis submodules
     if "distributions" in args or "all" in args :
         if not analysis_parameters.distribution_measures is None and len(analysis_parameters.distribution_measures) > 0:
             distribution_sucess = distributions_analysis(
-                Acquisition=Acquisition,
                 Detection=Detection,
                 Cell=Cell,
-                Spots=Spots,
-                Gene_map=Gene_map,
                 run_path=run_path,
-                distributions_measures= analysis_parameters.distribution_measures
+                distributions_measures= analysis_parameters.distribution_measures,
+                washout_keyword=analysis_parameters.washout_keyworkd
             )
             if not distribution_sucess :
                 print("Error raised during distribution analysis. Please check log in ~analysis/distribution_analysis folder.")
     
     if "density" in args  or "all" in args:
         density_sucess = density_analysis(
-            Acquisition=Acquisition,
             Detection=Detection,
             Spots=Spots,
-            Gene_map=Gene_map,
             run_path=run_path,
             min_number_spots=analysis_parameters.min_spots_number,
             min_diversity=analysis_parameters.min_diversity,
@@ -117,12 +113,15 @@ def run(run_path,*args) :
     ))
     if any_paircoloc or "all" in args:
 
+<<<<<<< HEAD
         if not analysis_parameters.foci_rnas is None :
             Spots = _add_foci_to_analysis(
                 Spots,
                 foci_rnas=analysis_parameters.foci_rnas
             )
         
+=======
+>>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
         coloc_main(
             filtered_Spots=Spots,
             Cell=Cell,
@@ -132,7 +131,10 @@ def run(run_path,*args) :
             significance= analysis_parameters.coloc_significance,
             frameon=analysis_parameters.frameon
         )
+<<<<<<< HEAD
         
+=======
+>>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
 
     # Exploratory analysis
     exploration_kw = ["multivariate","data", "structure", "all"]
@@ -167,27 +169,4 @@ def run(run_path,*args) :
         if not sucess :
             print("Error raised during dashboards analysis. Please check log in ~analysis/dashboards/ folder.")
 
-
-def _add_foci_to_analysis(
-    Spots : pd.DataFrame, 
-    foci_rnas : list[str]
-    ) :
-    """
-    Separate part of Spots data to analyse spots by populations : clustered and free.
-    """
-
-    save_len = len(Spots.dropna())
-
-    foci_spots = Spots.loc[(Spots["target"].isin(foci_rnas)) & (Spots["population"] == "clustered")]
-    foci_spots.loc[:,["target"]] = foci_spots["target"].str.cat(['_clustered']*len(foci_spots))
-    Spots.loc[(Spots["target"].isin(foci_rnas)) & (Spots["population"] == "clustered")] = foci_spots
-
-    free_spots = Spots.loc[(Spots["target"].isin(foci_rnas)) & (Spots["population"] == "free")]
-    free_spots.loc[:,["target"]] = free_spots["target"].str.cat(['_free']*len(free_spots))
-    Spots.loc[(Spots["target"].isin(foci_rnas)) & (Spots["population"] == "free")] = free_spots
-
-    assert save_len == len(Spots.dropna())
-
-    return Spots
-
-
+    logging.info("Analysis is done.")
