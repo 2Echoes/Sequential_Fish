@@ -8,7 +8,7 @@ from typing import Literal, TypedDict, cast
 import numpy as np
 import pandas as pd
 
-from skimage.metrics import mean_squared_error
+from skimage.metrics.simple_metrics import mean_squared_error
 from scipy.stats import pearsonr
 from pebble import ProcessPool, ThreadPool
 
@@ -100,6 +100,7 @@ def plot_endcycle_coloc_rates(
         y="colocalization rate",
         hue="type", palette=["#fb9a99", "#80b1d3"],
         edgecolor = "black",
+        orient='h',
         ax=ax
     )
 
@@ -362,21 +363,6 @@ def signal_quality_dashboard(
         chroma_checker=chroma_checker
     )
 
-    #3. Similarity measurements
-    similarity_path = os.path.join(run_path,"analysis","data","similarity.csv")
-    if not os.path.isfile(similarity_path) :
-        similarity_df = process_similarity_metrics(
-            Gene_map=Gene_map,
-            Acquisition=Acquisition,
-            drift_namepair=drift_checker,
-            abb_namepair=chroma_checker,
-            run_path=run_path
-            )
-        similarity_df.to_csv(os.path.join(run_path,"analysis","data","similarity.csv"), sep=';')
-        
-    else :
-        similarity_df = pd.read_csv(similarity_path, sep=";")
-
     #4. Drift
     drift_means = _compute_drift_means(
         Acquisition=Acquisition,
@@ -403,8 +389,7 @@ def signal_quality_dashboard(
             ax.set_ylabel("")
             sns.despine(ax=ax,left=True)
     
-    coloc_checkers_ax = fig.add_subplot(grid[4,0])
-    similarity_ax = fig.add_subplot(grid[4,1])
+    coloc_checkers_ax = fig.add_subplot(grid[4,:2])
     drift_heatmap_ax = fig.add_subplot(grid[3:, 2:])
 
     #Plot drift swarmplots
@@ -429,12 +414,6 @@ def signal_quality_dashboard(
         ax=coloc_checkers_ax,
         coloc_range = coloc_range,
         **coloc_rates
-    )
-
-
-    similarity_ax = plot_similarity_metrics(
-        similarity_ax,
-        similarity_df
     )
 
     drift_heatmap_ax = plot_drift_heatmap(
