@@ -56,10 +56,6 @@ def initiate_chromatic_widgets(
 
 @register_chromatic_widget
 class SpotCorrector(ChromaticWidget) :
-<<<<<<< HEAD
-
-=======
->>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
     def _create_widget(self):
         
         @magicgui(
@@ -75,17 +71,6 @@ class SpotCorrector(ChromaticWidget) :
             if not calibration_exist(self.run_path, reference_wavelength, corrected_wavelength=layer_wavelenth) :
                 raise UserInputError(f"Not calibration was found for reference wavelength : {reference_wavelength}nm and layer wavelength : {layer_wavelenth}")
 
-<<<<<<< HEAD
-            calibration = load_calibration(self.run_path, reference_wavelength=reference_wavelength, corrected_wavelength=layer_wavelenth)
-            new_coordinates = apply_polynomial_transform_spots(
-                coords=Spots.data,
-                poly=calibration['polynomial_features_inv'],
-                model_x = calibration['x_inv_fit'],            
-                model_y = calibration['y_inv_fit'],
-                model_z = calibration['z_inv_fit'],       
-                voxel_size= np.array(self.voxel_size, dtype=int) 
-            ).round().astype(int)
-=======
             calibration = load_calibration(reference_wavelength=reference_wavelength, corrected_wavelength=layer_wavelenth)
 
             if Spots.data.ndim == 3 :
@@ -105,7 +90,6 @@ class SpotCorrector(ChromaticWidget) :
                     model_y = calibration['y_inv_fit'],
                 ).round().astype(int)
             ],axis=1)
->>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
 
             res = LayerDataTuple((
                 new_coordinates,
@@ -130,10 +114,6 @@ class SpotCorrector(ChromaticWidget) :
 
 @register_chromatic_widget
 class SignalCorrector(ChromaticWidget) :
-<<<<<<< HEAD
-
-=======
->>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
     def _create_widget(self):
         
         @magicgui(
@@ -204,11 +184,7 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
         self.inv_model_x = LinearRegression()
         self.inv_model_y = LinearRegression()
         self.inv_model_z = LinearRegression()
-<<<<<<< HEAD
-        self.voxel_size = (1,1,1)
-=======
         self.calibration_folder = CALIBRATION_FOLDER
->>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
         self.degree = 2
         self.timestamp = get_datetime()
         self.save_widget = self._create_save_widget()

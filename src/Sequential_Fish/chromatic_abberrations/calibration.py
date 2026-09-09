@@ -101,11 +101,7 @@ def update_calibration_index(
     calibration_folder = get_calibration_folder(run_path)
     index[file_index] = filename
 
-<<<<<<< HEAD
     with open(calibration_folder + '/index.json', 'w') as index_file:
-=======
-    with open(CALIBRATION_FOLDER + '/index.json', 'w', encoding='utf-8') as index_file:
->>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
         json.dump(index, index_file, indent=2)
     
 def load_calibration(
@@ -113,14 +109,9 @@ def load_calibration(
         reference_wavelength: int,
         corrected_wavelength: int,
         ) -> Calibration :
-<<<<<<< HEAD
-    
-    index = _load_calibration_index(run_path)
-=======
 
     print("Loading CALIBRATION")
     index = _load_calibration_index()
->>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
     calibration_key = _make_calibration_key(reference_wavelength, corrected_wavelength)
 
     if calibration_key not in index.keys() :
@@ -158,14 +149,11 @@ def save_fit_model(
         timestamp,
     ) :
 
-<<<<<<< HEAD
     calibration_folder = get_calibration_folder(run_path)
     
     if not os.path.isdir(calibration_folder) : os.makedirs(calibration_folder)
     filename = calibration_folder + f"/{reference_wavelength}_{corrected_wavelength}_{timestamp}.joblib" 
 
-=======
->>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
     joblib.dump({
         'x_fit' : x_fit,
         'y_fit' : y_fit,

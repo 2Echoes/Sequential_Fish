@@ -669,16 +669,10 @@ def pairwise_colocalization_analysis(
         frameon = True,
 ) :
 
-<<<<<<< HEAD
-    filtered_Spots.info()
-    voxel_size = Detection['voxel_size'].at[0]
-    os.makedirs(output_path + "/datasheet/",exist_ok=True)
-=======
     voxel_size = Detection['voxel_size'].iat[0]
     output_path = os.path.join(run_path,"analysis")
     os.makedirs(output_path + "/data/",exist_ok=True)
     os.makedirs(output_path + "/graph/colocalization/",exist_ok=True)
->>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
 
     RNA_list = list(filtered_Spots['target'].unique())
     RNA_list.sort()
