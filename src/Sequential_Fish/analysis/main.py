@@ -123,7 +123,7 @@ def run(run_path,*args) :
                 foci_rnas=analysis_parameters.foci_rnas
             )
         
-        coloc_sucess = coloc_main(
+        coloc_main(
             filtered_Spots=Spots,
             Cell=Cell,
             Detection=Detection,
@@ -132,9 +132,7 @@ def run(run_path,*args) :
             significance= analysis_parameters.coloc_significance,
             frameon=analysis_parameters.frameon
         )
-
-        if not coloc_sucess :
-            print("Error raised during coloc analysis. Please check log in ~analysis/")
+        
 
     # Exploratory analysis
     exploration_kw = ["multivariate","data", "structure", "all"]

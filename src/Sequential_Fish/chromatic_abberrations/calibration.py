@@ -4,8 +4,11 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import NearestNeighbors
 
-from .constant import CALIBRATION_FOLDER
 from ..customtypes import Calibration
+
+def get_calibration_folder(run_path) :
+    return os.path.join(run_path,"/saved_calibrations/")
+
 
 def match_beads(coords1 : np.ndarray, coords2 : np.ndarray, max_dist=5):
     """Match nearest beads between two channels."""
@@ -23,12 +26,12 @@ def fit_polynomial_transform_3d(src_points : np.ndarray, dst_points : np.ndarray
     model_z = LinearRegression().fit(X_poly, dst_points[:, 0])  # z
     return poly, model_x, model_y, model_z
 
-def _load_calibration_index() -> dict :
+def _load_calibration_index(run_path : str) -> dict :
     """
     Create one if doesn't exist.
     """
 
-    index_path = CALIBRATION_FOLDER + "/index.json"
+    index_path = get_calibration_folder(run_path)
 
     if os.path.isfile(index_path) :
         with open(index_path, 'r') as f:
@@ -45,6 +48,7 @@ def _make_calibration_key(
     return f"{corrected_wavelength}_{reference_wavelength}"
 
 def update_calibration_index(
+        run_path : str,
         reference_wavelength : int,
         corrected_wavelength : int,
         filename : str,
@@ -55,18 +59,20 @@ def update_calibration_index(
 
     file_index = _make_calibration_key(reference_wavelength, corrected_wavelength)
 
-    index = _load_calibration_index()
+    index = _load_calibration_index(run_path)
+    calibration_folder = get_calibration_folder(run_path)
     index[file_index] = filename
 
-    with open(CALIBRATION_FOLDER + '/index.json', 'w') as index_file:
+    with open(calibration_folder + '/index.json', 'w') as index_file:
         json.dump(index, index_file, indent=2)
     
 def load_calibration(
+        run_path : str,
         reference_wavelength: int,
         corrected_wavelength: int,
         ) -> Calibration :
     
-    index = _load_calibration_index()
+    index = _load_calibration_index(run_path)
     calibration_key = _make_calibration_key(reference_wavelength, corrected_wavelength)
 
     if calibration_key not in index.keys() :
@@ -77,10 +83,11 @@ def load_calibration(
     return calibration
 
 def calibration_exist(
+        run_path : str,
         reference_wavelength: int,
         corrected_wavelength: int,
 ) :
-    index = _load_calibration_index()
+    index = _load_calibration_index(run_path)
     calibration_key = _make_calibration_key(reference_wavelength, corrected_wavelength)
     if calibration_key not in index.keys() :
         return False
@@ -88,6 +95,7 @@ def calibration_exist(
         return True
 
 def save_fit_model(
+        run_path : str,
         x_fit,
         y_fit,
         z_fit,
@@ -102,11 +110,13 @@ def save_fit_model(
         corrected_wavelength,
         timestamp,
     ) :
-        
-    if not os.path.isdir(CALIBRATION_FOLDER) : os.makedirs(CALIBRATION_FOLDER)
-    filename = CALIBRATION_FOLDER + f"/{reference_wavelength}_{corrected_wavelength}_{timestamp}.joblib" 
 
-    res = joblib.dump({
+    calibration_folder = get_calibration_folder(run_path)
+    
+    if not os.path.isdir(calibration_folder) : os.makedirs(calibration_folder)
+    filename = calibration_folder + f"/{reference_wavelength}_{corrected_wavelength}_{timestamp}.joblib" 
+
+    joblib.dump({
         'x_fit' : x_fit,
         'y_fit' : y_fit,
         'z_fit' : z_fit,
@@ -125,6 +135,7 @@ def save_fit_model(
     )
 
     update_calibration_index(
+        run_path=run_path,
         reference_wavelength=reference_wavelength,
         corrected_wavelength=corrected_wavelength,
         filename= filename

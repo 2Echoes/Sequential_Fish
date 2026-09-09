@@ -95,6 +95,7 @@ def main(run_path) :
     #Chromatic tab
     if not settings.WAVELENGTH_LIST is None :
         chromatic_container, new_linked_widgets = create_chromatic_tab(
+            run_path=run_path,
             viewer=Viewer,
             wavelength_list=settings.WAVELENGTH_LIST,
             voxel_size=voxel_size
@@ -270,12 +271,13 @@ def create_thresholds_tab(
     return full_threshold_container
 
 def create_chromatic_tab(
+    run_path : str,
     viewer : napari.Viewer,
     wavelength_list : list[int],
     voxel_size : tuple,
     ) :
 
-    chromatic_widgets, linked_widgets = initiate_chromatic_widgets(viewer=viewer, wavelength_list=wavelength_list, voxel_size=voxel_size)
+    chromatic_widgets, linked_widgets = initiate_chromatic_widgets(run_path=run_path, viewer=viewer, wavelength_list=wavelength_list, voxel_size=voxel_size)
     chromatic_container = Container(
         widgets= chromatic_widgets,
         labels=False

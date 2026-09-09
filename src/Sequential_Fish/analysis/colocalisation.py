@@ -351,8 +351,6 @@ def create_coloc_rate_expectancy(
     Returns (coloc_rates_df, selfcoloc_rates_df)
 
     """
-    
-    Spots = Spots.loc[Spots['target'].isin(RNA_list)]
 
     Cell_area = pd.DataFrame(_get_cell_area(Cell).rename('real_area'))
     corrected_positions_number = _compute_corrected_positions_number(
@@ -679,6 +677,7 @@ def pairwise_colocalization_analysis(
         frameon = True,
 ) :
 
+    filtered_Spots.info()
     voxel_size = Detection['voxel_size'].at[0]
     os.makedirs(output_path + "/datasheet/",exist_ok=True)
 

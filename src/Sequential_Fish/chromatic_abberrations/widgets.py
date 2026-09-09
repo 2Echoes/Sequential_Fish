@@ -7,7 +7,6 @@ import numpy as np
 from pathlib import Path
 from typing import Tuple, List
 from napari.layers import Points, Image
-from typing import Tuple
 from magicgui import magicgui
 from bigfish.detection import detect_spots
 from magicgui.widgets import FunctionGui
@@ -15,7 +14,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from itertools import cycle
 
-from Sequential_Fish.chromatic_abberrations import CALIBRATION_FOLDER
 from ..tools import get_datetime, reorder_image_stack, get_voxel_size_from_metadata
 from ..tools.utils import open_image 
 from ..viewer.types import NapariWidget
@@ -41,9 +39,6 @@ def initiate_all_calibration_widgets() -> 'list[FunctionGui]' :
 
 @register_calibration_widget    
 class ImageOpener(NapariWidget) :
-    
-    def __init__(self):
-        super().__init__()
 
     def _create_widget(self):
         
@@ -122,7 +117,7 @@ class ImageOpener(NapariWidget) :
                 units='nm'
             )]
 
-        def update_scale_on_path_change(event) :
+        def update_scale_on_path_change() :
             """
             Read metadata of image when user selects a new file.
             """
@@ -135,12 +130,12 @@ class ImageOpener(NapariWidget) :
                     voxel_size = [
                         int(v) if isinstance(v, (int,float)) else 1 for v in voxel_size
                     ]
-                except ValueError as e :
+                except ValueError :
                     voxel_size = (1,1,1)
 
                 open_and_order_image.scale.value = voxel_size
         
-        open_and_order_image.image_path.changed.connect(update_scale_on_path_change)
+        open_and_order_image.image_path.changed.connect()
 
         return open_and_order_image
 
@@ -203,8 +198,9 @@ class BeadsDetector(NapariWidget) :
 
 @register_calibration_widget
 class ChromaticAberrationCorector(NapariWidget) :
-    def __init__(self, degree = 2):
+    def __init__(self, run_path : str, degree = 2):
 
+        self.run_path = run_path
         self.model_x = LinearRegression()
         self.model_y = LinearRegression()
         self.model_z = LinearRegression()
@@ -213,7 +209,6 @@ class ChromaticAberrationCorector(NapariWidget) :
         self.inv_model_x = LinearRegression()
         self.inv_model_y = LinearRegression()
         self.inv_model_z = LinearRegression()
-        self.calibration_folder = CALIBRATION_FOLDER
         self.voxel_size = (1,1,1)
         self.degree = degree
         self.timestamp = get_datetime()
@@ -319,6 +314,7 @@ class ChromaticAberrationCorector(NapariWidget) :
         ) :
             
             save_fit_model(
+                run_path=self.run_path,
                 x_fit=self.model_x,
                 y_fit=self.model_y,
                 z_fit=self.model_z,

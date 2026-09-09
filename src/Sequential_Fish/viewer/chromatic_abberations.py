@@ -1,17 +1,14 @@
-from itertools import cycle
 from typing import cast
 
-from napari._qt.utils import signal
 
 from .types import ThreadedWidget, NapariWidget, UserInputError
 from ..tools import get_datetime
 from ..chromatic_abberrations import calibration_exist, load_calibration
 from ..chromatic_abberrations.calibration import match_beads, fit_polynomial_transform_3d, save_fit_model
 from ..chromatic_abberrations import apply_polynomial_transform_spots, apply_polynomial_transform_to_signal
-from ..chromatic_abberrations import CALIBRATION_FOLDER
 
 
-from napari import Viewer
+from napari.viewer import Viewer
 from napari.types import LayerDataTuple
 from napari.layers import Points, Image
 from magicgui import magicgui
@@ -24,7 +21,8 @@ from sklearn.preprocessing import PolynomialFeatures
 
 class ChromaticWidget(ThreadedWidget) :
 
-    def __init__(self, *,voxel_size : tuple[int,int,int], wavelength_list : list[int], viewer: Viewer):
+    def __init__(self, *,run_path : str, voxel_size : tuple[int,int,int], wavelength_list : list[int], viewer: Viewer):
+        self.run_path = run_path
         self.voxel_size =voxel_size
         self.wavelength_list = wavelength_list
         super().__init__(viewer=viewer)
@@ -37,6 +35,7 @@ def register_chromatic_widget(cls) :
     return cls
 
 def initiate_chromatic_widgets(
+        run_path : str,
         viewer : Viewer,
         wavelength_list : list[int],
         voxel_size : tuple,
@@ -44,7 +43,7 @@ def initiate_chromatic_widgets(
     widget_list = []
     linked_widgets = []
     for cls in _CHROMATIC_WIDGETS :
-        instance = cls(voxel_size=voxel_size, wavelength_list = wavelength_list, viewer=viewer)
+        instance = cls(run_path=run_path, voxel_size=voxel_size, wavelength_list = wavelength_list, viewer=viewer)
         if hasattr(instance,"enabled") :
             if instance.enabled :
                 widget_list.extend(instance.get_widgets())
@@ -58,8 +57,6 @@ def initiate_chromatic_widgets(
 
 @register_chromatic_widget
 class SpotCorrector(ChromaticWidget) :
-    def __init__(self, *, viewer: Viewer, wavelength_list : list[int], voxel_size : tuple[int,int,int]):
-        super().__init__(viewer=viewer, wavelength_list = wavelength_list, voxel_size = voxel_size)
 
     def _create_widget(self):
         
@@ -73,10 +70,10 @@ class SpotCorrector(ChromaticWidget) :
             layer_wavelenth : int
         ) :
 
-            if not calibration_exist(reference_wavelength, corrected_wavelength=layer_wavelenth) :
+            if not calibration_exist(self.run_path, reference_wavelength, corrected_wavelength=layer_wavelenth) :
                 raise UserInputError(f"Not calibration was found for reference wavelength : {reference_wavelength}nm and layer wavelength : {layer_wavelenth}")
 
-            calibration = load_calibration(reference_wavelength=reference_wavelength, corrected_wavelength=layer_wavelenth)
+            calibration = load_calibration(self.run_path, reference_wavelength=reference_wavelength, corrected_wavelength=layer_wavelenth)
             new_coordinates = apply_polynomial_transform_spots(
                 coords=Spots.data,
                 poly=calibration['polynomial_features_inv'],
@@ -107,8 +104,6 @@ class SpotCorrector(ChromaticWidget) :
 
 @register_chromatic_widget
 class SignalCorrector(ChromaticWidget) :
-    def __init__(self, *, viewer: Viewer, wavelength_list : list[int], voxel_size : tuple[int,int,int]):
-        super().__init__(viewer=viewer, wavelength_list = wavelength_list, voxel_size = voxel_size)
 
     def _create_widget(self):
         
@@ -122,10 +117,10 @@ class SignalCorrector(ChromaticWidget) :
             layer_wavelenth : int
         ) :
 
-            if not calibration_exist(reference_wavelength, corrected_wavelength=layer_wavelenth) :
+            if not calibration_exist(self.run_path, reference_wavelength, corrected_wavelength=layer_wavelenth) :
                 raise UserInputError(f"Not calibration was found for reference wavelength : {reference_wavelength}nm and layer wavelength : {layer_wavelenth}")
 
-            calibration = load_calibration(reference_wavelength=reference_wavelength, corrected_wavelength=layer_wavelenth)
+            calibration = load_calibration(self.run_path,reference_wavelength=reference_wavelength, corrected_wavelength=layer_wavelenth)
 
             if Signal.data.ndim == 4 :
                 new_signal = np.stack(
@@ -173,7 +168,7 @@ class SignalCorrector(ChromaticWidget) :
 
 @register_chromatic_widget
 class ChromaticAberrationCalibrator(ChromaticWidget) :
-    def __init__(self, voxel_size : tuple, viewer : Viewer, wavelength_list):
+    def __init__(self, run_path : str, voxel_size : tuple, viewer : Viewer, wavelength_list):
 
         self.model_x = LinearRegression()
         self.model_y = LinearRegression()
@@ -183,13 +178,12 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
         self.inv_model_x = LinearRegression()
         self.inv_model_y = LinearRegression()
         self.inv_model_z = LinearRegression()
-        self.calibration_folder = CALIBRATION_FOLDER
         self.voxel_size = (1,1,1)
         self.degree = 2
         self.timestamp = get_datetime()
         self.save_widget = self._create_save_widget()
         
-        super().__init__(viewer=viewer, voxel_size=voxel_size, wavelength_list=wavelength_list)
+        super().__init__(run_path=run_path, viewer=viewer, voxel_size=voxel_size, wavelength_list=wavelength_list)
 
         self.register_widget(self.save_widget)
 
@@ -311,6 +305,7 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
         ) :
             
             save_fit_model(
+                run_path=self.run_path,
                 x_fit=self.model_x,
                 y_fit=self.model_y,
                 z_fit=self.model_z,
