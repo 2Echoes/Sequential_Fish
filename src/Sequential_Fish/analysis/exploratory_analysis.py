@@ -305,7 +305,7 @@ def _network_analysis(
         )
 
     network_graph_ax.set_ylabel(f"Edges thresholds : inertia contribution={inertia_threshold * 100} %", fontdict={"size" : 15})
-    network_graph_ax.set_xlabel(f"Chisquare distance oriented bipartite - graph", fontdict={"size" : 15})
+    network_graph_ax.set_xlabel(f"Chisquare distance oriented bipartite - Graph", fontdict={"size" : 15})
 
     return network_graph_ax
 
