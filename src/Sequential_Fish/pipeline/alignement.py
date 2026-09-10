@@ -2,11 +2,12 @@
 This script aims at correcting drift computed in Drift.py for spots and clusters saving both corrected coordinates and detected coordinates.
 """
 import pandas as pd
+import logging
 from ..tools import safe_merge_no_duplicates
 
 def main(run_path) :
     
-    print(f"alignement runing for {run_path}")
+    logging.info(f"alignement runing for {run_path}")
     
     Acquisition = pd.read_feather(run_path + '/result_tables/Acquisition.feather')
     Drift = pd.read_feather(run_path + '/result_tables/Drift.feather')
@@ -58,18 +59,19 @@ def main(run_path) :
             Clusters[key[-1]] = Clusters[key]
             Clusters = Clusters.drop(columns=key)
     Spots = Spots.rename(columns={'z' : 'drifted_z', 'y' : 'drifted_y', 'x' : 'drifted_x'}) #Keeping old values
+
     for i in['z','y','x'] :
-        print(i)
         Spots[i] = (Spots['drifted_{0}'.format(i)] + Spots['drift_{0}'.format(i)]).astype(int)
         drop_index = Spots[Spots[i] >= Spots['{0}_shape'.format(i)]].index.to_list()
+        drop_index += Spots[Spots[i] < 0].index.to_list()
         Spots = Spots.drop(drop_index, axis=0)
-        print("drift pushed {0} spots out of range".format(len(drop_index)))
+        logging.info("drift pushed {0} spots out of range".format(len(drop_index)))
 
     Clusters = Clusters.rename(columns={'z' : 'drifted_z', 'y' : 'drifted_y', 'x' : 'drifted_x'}) #Keeping old values
     for i in ['z','y','x'] : 
         Clusters[i] = (Clusters['drifted_{0}'.format(i)] + Clusters['drift_{0}'.format(i)]).astype(int)
         drop_index = Clusters[Clusters[i] >= Clusters['{0}_shape'.format(i)]].index.to_list()
-        print("drift pushed {0} clusters out of range".format(len(drop_index)))
+        logging.info("drift pushed {0} clusters out of range".format(len(drop_index)))
         Clusters = Clusters.drop(drop_index)
 
     Spots.reset_index(drop=True).to_feather(run_path + "/result_tables/Spots.feather")
