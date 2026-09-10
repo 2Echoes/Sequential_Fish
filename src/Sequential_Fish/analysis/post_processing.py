@@ -17,10 +17,17 @@ def Spots_post_processing(
         Spots : pd.DataFrame,
         Cell : pd.DataFrame,
         Detection : pd.DataFrame,
+        run_path : str = None,
         reference_wavelength : int | None = None
 ) :
     """
     Filter Spots in washout artifacts and Spots in cells found on segmentation edges.
+
+
+    Parameters
+    ----------
+        run_path : str, Path to working directory, or any path where '/saved_calibrations' can be found.
+        reference_wavelength
     """
     logging.info("Starting post-processing operations") 
 
@@ -32,16 +39,19 @@ def Spots_post_processing(
         Detection=Detection,
     )
 
-    if not reference_wavelength is None :
+    if not reference_wavelength is None and not run_path is None:
         logging.info(
             f"Correcting chromatic abberations :\n\t -> reference wavelength : {reference_wavelength}\n\t -> found wavelengths : {list(Detection["wavelength"].unique())}"
             )
     
         Spots = correct_Spots_dataframe(
+            run_path=run_path,
             Detection=Detection,
             Spots=Spots,
             reference_wavelength= reference_wavelength
-        ) 
+        )
+    elif not reference_wavelength is None or not run_path is None :
+        raise ValueError("To correct chromatic aberrations reference_wavelength and run_path must not be None. 'run_path' can also be any path where /saved_calibrations can be found.")
 
     return Spots
 
@@ -276,6 +286,7 @@ def _cache_colocalization_data(
         Cell = pd.read_feather(os.path.join(result_path,"Cell.feather"))
 
         Spots = Spots_post_processing(
+            run_path=run_path,
             Spots=Spots,
             Cell=Cell,
             Detection=Detection,

@@ -101,7 +101,7 @@ def update_calibration_index(
     calibration_folder = get_calibration_folder(run_path)
     index[file_index] = filename
 
-    with open(calibration_folder + '/index.json', 'w') as index_file:
+    with open(calibration_folder + '/index.json', 'w', encoding="utf-8") as index_file:
         json.dump(index, index_file, indent=2)
     
 def load_calibration(
@@ -111,7 +111,7 @@ def load_calibration(
         ) -> Calibration :
 
     print("Loading CALIBRATION")
-    index = _load_calibration_index()
+    index = _load_calibration_index(run_path)
     calibration_key = _make_calibration_key(reference_wavelength, corrected_wavelength)
 
     if calibration_key not in index.keys() :

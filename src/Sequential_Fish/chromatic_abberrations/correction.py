@@ -52,6 +52,7 @@ def get_polynomial_features(degree : int) :
 
 
 def correct_Spots_dataframe(
+        run_path : str,
         Detection : pd.DataFrame,
         Spots : pd.DataFrame,
         reference_wavelength :int,       
@@ -61,6 +62,7 @@ def correct_Spots_dataframe(
     for wv in wavelength_list :
         if int(wv) == int(reference_wavelength) : continue
         calibration_available = calibration_exist(
+            run_path=run_path,
             reference_wavelength=reference_wavelength,
             corrected_wavelength=wv,
         )
@@ -77,7 +79,7 @@ def correct_Spots_dataframe(
         if int(wv) == int(reference_wavelength) : continue
 
         Detection_loc = Detection.loc[Detection['wavelength'] == wv]
-        calibration = load_calibration(reference_wavelength, wv)
+        calibration = load_calibration(run_path, reference_wavelength, wv)
         detection_ids_to_correct = Detection_loc['detection_id']
 
         spots_idx_to_correct = Spots[Spots['detection_id'].isin(detection_ids_to_correct)].index
