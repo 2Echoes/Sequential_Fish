@@ -144,6 +144,7 @@ class AnalysisParameters(ParametersModel) :
 
     #Multivariate_exploratory
     control_genes : list[str] | None = Field(default=None, json_schema_extra={"tab" : "Multivariate"})
+    inertia_threshold : float =Field(default=0.02, json_schema_extra={"tab" : "Multivariate"})
     threshold_coloc_value : float = Field(default=1e-3, json_schema_extra={"tab" : "Multivariate"})
     threshold_coloc_zscore : float = Field(default=1, json_schema_extra={"tab" : "Multivariate"})
 

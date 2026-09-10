@@ -28,7 +28,7 @@ import networkx as nx
 import igraph as ig
 import leidenalg as la
 from scipy.spatial.distance import pdist, squareform
-from scipy.stats import chi2
+from scipy.stats import chi2, chi2_contingency
 from scipy.cluster.hierarchy import linkage, dendrogram
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import scale
@@ -38,8 +38,7 @@ def main(
         run_path : str,
         Spots : pd.DataFrame,
         control_genes : list[str] | None,
-        thresold_coloc_value : float,
-        threshold_coloc_zscore : float,
+        inertia_threshold : float,
 ) :
 
     exploration_path = os.path.join(run_path,"analysis","graph","multivariate","exploration")
@@ -58,9 +57,7 @@ def main(
         colocalization_figure = colocalization_exploration(
             Spots, 
             run_path,
-            zscores=zscores,
-            threshold_coloc_rate=thresold_coloc_value,
-            threshold_zscore=threshold_coloc_zscore
+            inertia_threshold=inertia_threshold
             )
         colocalization_figure.savefig(os.path.join(exploration_path,"colocalization.svg"))
 
@@ -90,9 +87,7 @@ def main(
 def colocalization_exploration(
         Spots : pd.DataFrame,
         run_path : str,
-        zscores : pd.DataFrame,
-        threshold_coloc_rate : float,
-        threshold_zscore : float,
+        inertia_threshold : float,
         na_policy : Literal["fill","drop"] = "fill",
 ) :
     """
@@ -150,14 +145,19 @@ def colocalization_exploration(
         mca_intertia_ax=mca_intertia_ax
     )
 
+    inertia_contribution = _compute_intertia_contribution(mca)
+    elbow_point = _find_elbow(inertia_contribution)
+    inertia_contribution : pd.DataFrame = mca.column_contributions_
+    inertia_contribution = inertia_contribution.iloc[:,:elbow_point+1]
+    inertia_contribution.index = pd.MultiIndex.from_arrays(zip(*inertia_contribution.index.str.split("__").to_list()))
+    inertia_contribution = inertia_contribution.reset_index(drop=False).sort_values(["level_1","level_0"])
+
     #2. Network_plots
     network_graph_ax = _network_analysis(
         data,
-        mca, 
-        zscores=zscores,
         network_graph_ax=network_graph_ax,
-        threshold_value=threshold_coloc_rate,
-        threshold_zscore=threshold_zscore
+        inertia_contribution=inertia_contribution,
+        inertia_threshold=inertia_threshold
         )
 
 
@@ -290,77 +290,70 @@ def _make_contribution_plot(
 #2.
 def _network_analysis(
         data : pd.DataFrame,
-        mca : prince.mca, 
-        zscores : pd.DataFrame,
         network_graph_ax : Axes,
-        threshold_zscore : float = 1,
-        threshold_value : float =.1,
+        inertia_contribution : pd.DataFrame,
+        inertia_threshold = 0.02,
 ) :
 
-    G, edges = _construct_network(data, mca, zscores, threshold_zscore=threshold_zscore, threshold_value=threshold_value)
-    partition = _find_communities(G)
+    G, edges = _construct_network(data, inertia_threshold=inertia_threshold, contributions=inertia_contribution)
     network_graph_ax = _make_network_plot(
         G,
         edges,
         network_graph_ax,
         data,
-        partition=partition,
+        inertia_contribution= inertia_contribution
         )
 
-    network_graph_ax.set_ylabel(f"Edges thresholds : zcore={threshold_zscore}, coloc_rate={threshold_value*100} %", fontdict={"size" : 15})
-    network_graph_ax.set_xlabel("Network with directed Louvain communities.", fontdict={"size" : 15})
+    network_graph_ax.set_ylabel(f"Edges thresholds : inertia contribution={inertia_threshold * 100} %", fontdict={"size" : 15})
+    network_graph_ax.set_xlabel(f"Chisquare distance oriented bipartite - graph", fontdict={"size" : 15})
 
     return network_graph_ax
 
 def _construct_network(
         data : pd.DataFrame,
-        mca : prince.mca, 
-        zscores:pd.DataFrame,
-        threshold_zscore : float = 1,
-        threshold_value: float = .1 ,
+        inertia_threshold : float,
+        contributions : pd.DataFrame,
         ) :
     G = nx.DiGraph()
     edges = {
-        "zscores" : {"pairs" : [], "width" : []},
         "value" : {"pairs" : [], "width" : [], "coloc_rate" : []},
     }
 
-    inertia_contribution = _compute_intertia_contribution(mca)
-    elbow_point = _find_elbow(inertia_contribution)
-    contributions = mca.column_contributions_
-    contributions = contributions.iloc[:,:elbow_point+1]
-    contributions.index = pd.MultiIndex.from_arrays(zip(*contributions.index.str.split("__").to_list()))
-    contributions = contributions.reset_index(drop=False).sort_values(["level_1","level_0"])
-
-    print(contributions)
+    EDGE_WIDTH = 5
+    chi2_matrix = chisquare_distance_matrix(data)
+    weight_ref_chi2 = chi2_matrix.max(None)
 
     # Add nodes (RNAs)
     for rna in data.columns:
         G.add_node(rna)
 
-    
+    dimensions_keys = contributions.set_index(["level_1","level_0"]).columns.to_list() 
 
-    print("Nodes", G.nodes)
+    for dimension in dimensions_keys :
+        G.add_node(dimension)
 
     for rna1, rna2 in permutations(data.columns.to_list(),r=2) :
         if rna1 == rna2 : continue
-        zscore = zscores.at[rna1,rna2]
+        G.add_edge(rna1,rna2, weight=chi2_matrix.at[rna1,rna2])
 
-        if abs(zscore)>=threshold_zscore  : 
-            edges['zscores']["pairs"].append((rna1,rna2))
-            edges['zscores']["width"].append(zscore / 50 *20)
+    melted_contributions = contributions[contributions["level_1"].astype(bool)].melt(
+        id_vars="level_0",
+        var_name="dimension",
+        value_vars= dimensions_keys,
+        value_name= "inertia",
+        ignore_index=True
+    )
 
-        coloc_number = np.sum(([data[rna1] & data[rna2]]))
-        population_size = np.sum(data[rna1])
+    total_inertia :float = melted_contributions.loc[melted_contributions["inertia"] >= inertia_threshold]["inertia"].sum(axis=None)
+    weight_ref_inertia = 0.1 # Contribution to 10% for a single category is very significative
 
-        coloc_rate = coloc_number/population_size
-        if coloc_rate >= threshold_value : 
-            edges["value"]["pairs"].append((rna1,rna2))
-            edges["value"]["width"].append(max(.5,coloc_rate*10))
-            edges["value"]["coloc_rate"].append(str(round(coloc_rate*100, 2)) + " %" if coloc_rate >0.01 else "")
-
-        if coloc_rate >= threshold_value or abs(zscore)>=threshold_zscore :
-            G.add_edge(rna1,rna2, weight=coloc_rate)
+    for contribution_idx in melted_contributions.loc[melted_contributions["inertia"] >= inertia_threshold].index :
+        dimension = melted_contributions.at[contribution_idx, "dimension"]
+        rna = melted_contributions.at[contribution_idx, "level_0"]
+        value = melted_contributions.at[contribution_idx, "inertia"]
+        G.add_edge(rna,dimension, weight=value / weight_ref_inertia * weight_ref_chi2)
+        edges["value"]["pairs"].append((rna,dimension))
+        edges["value"]["width"].append(value / total_inertia * EDGE_WIDTH)
 
 
     return G, edges
@@ -370,70 +363,64 @@ def _make_network_plot(
         edges : dict[Literal["zscores", "value"], tuple],
         ax : Axes,
         data : pd.DataFrame,
-        partition : dict | None = None,
+        inertia_contribution : pd.DataFrame,
 ) :
 
-    # Assign colors to communities
-    if not partition is None :
-        colors_com = [partition[node] / len(G.nodes()) for node in G.nodes()]
-    else : 
-        colors_com = None
+    NODE_SIZE = 1000 #Ref size divided amongst rna nodes proportionately to their single molecule number
 
-
-    pos = nx.spring_layout(G, seed=1)
     colors = cycle(['#8dd3c7','#ffffb3','#bebada','#fb8072','#80b1d3','#fdb462','#b3de69','#fccde5','#d9d9d9','#bc80bd','#ccebc5','#ffed6f'])
-    colors = [next(colors) for i in range(len(G.nodes))]
+    total_pop = data.sum(axis=None)
 
-    cmap = LinearSegmentedColormap.from_list(
-        "network_qualitative_map", 
-        list(zip(np.linspace(0,1,len(colors)),colors))
-        )
+    #rna
+    nodes_list = G.nodes
+    rna_list = []
+    dimension_list = []
+    node_dim = []
+    for node in nodes_list :
+        if node in data.columns :
+            rna_list.append(node)
+            node_dim.append(0)
+        else :
+            dimension_list.append(node)
+            node_dim.append(1)
+
+    total_inertia_contribution = inertia_contribution.loc[:, dimension_list].sum(axis=None)
+
+    pos = nx.spring_layout(G, seed=1, k=5)
 
     nx.draw_networkx_edges(
         G,pos=pos, 
-        edgelist=edges["zscores"]["pairs"], 
-        width= edges["zscores"]["width"],
+        edgelist=edges["value"]["pairs"], 
+        width= edges["value"]["width"],
         edge_color='red',
         ax=ax
         )
-    nx.draw_networkx_edge_labels(
-        G,pos,
-        edge_labels= dict(zip(
-            edges["value"]["pairs"],
-            edges["value"]["coloc_rate"]
-            )),
-
-        verticalalignment="bottom",
-        ax=ax
-    )
-
-    
-    nx.draw_networkx_edges(
-            G,pos=pos, 
-            edgelist=edges["value"]["pairs"], 
-            width= edges["value"]["width"],
-            edge_color=["black" if val > .5 else "gray" for val in edges["value"]["width"]],
-            alpha=.3,
-            style=':',
-            ax=ax
-            )
-
-
-    max_pop = data.sum(axis=0).max()
 
     nx.draw_networkx_nodes(
-        G, pos, 
-        node_color=colors if partition is None else colors_com, cmap=None if partition is None else cmap,
-        node_size= [np.sum(data[node]) / max_pop *2000 for node in G.nodes], 
+        G, pos,
+        nodelist= rna_list,
+        node_color=[next(colors) for i in range(len(rna_list))], 
+        node_size= [np.sum(data[rna]) / total_pop *NODE_SIZE*len(rna_list) for rna in rna_list], 
         edgecolors="black", alpha=.5,
         ax=ax
         )
+
+    nx.draw_networkx_nodes(
+        G, pos,
+        nodelist=dimension_list,
+        node_color=[next(colors) for i in range(len(dimension_list))], 
+        node_size= [np.sum(inertia_contribution[dimension]) / total_inertia_contribution *NODE_SIZE*len(dimension_list) for dimension in dimension_list], 
+        edgecolors="black", alpha=.8,
+        node_shape="d",
+        ax=ax
+        )
+
+    #dimensions
+    
     nx.draw_networkx_labels(
         G, pos,
         ax=ax
         )
-
-    plt.show()
 
     return ax
 
@@ -451,6 +438,37 @@ def _find_communities(G : nx.DiGraph) :
     partition = {igG.vs[i]["name"]: part.membership[i] for i in range(igG.vcount())}
 
     return partition
+
+def chisquare_distance_matrix(
+        binary_data : pd.DataFrame,
+        ):
+
+    # Initialize distance matrix
+    distance_matrix = pd.DataFrame(
+        index=binary_data.columns,
+        columns=binary_data.columns,
+        dtype=float
+    )
+    
+    # Compute chi-square distance for each pair of RNAs
+    for rna1, rna2 in combinations(binary_data.columns, 2):
+    # Create contingency table
+        contingency_table = pd.crosstab(binary_data[rna1], binary_data[rna2])
+
+    # Compute chi-square statistic
+        chi2_res, _, _, _ = chi2_contingency(contingency_table)
+
+    # Chi-square distance = sqrt(chi2)
+        distance = np.sqrt(chi2_res)
+        distance_matrix.loc[rna1, rna2] = distance
+        distance_matrix.loc[rna2, rna1] = distance  # Symmetric
+
+    # Fill diagonal with zeros
+    for rna in binary_data.columns:
+        distance_matrix.loc[rna, rna] = 0.0
+
+    return distance_matrix
+
 
 #3.
 def _hierarchical_clustering_analysis(

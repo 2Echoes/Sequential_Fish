@@ -281,8 +281,6 @@ class ChromaticAberrationCorector(NapariWidget) :
                 poly=self.polynomial_features,
                 model_x=self.model_x,
                 model_y=self.model_y,
-                model_z=self.model_z,
-                voxel_size=voxel_size
             )
             if image_corrected.ndim == 3 : image_corrected = image_corrected.reshape((1,) + tuple(image_corrected.shape))
 
@@ -323,7 +321,6 @@ class ChromaticAberrationCorector(NapariWidget) :
                 x_inv_fit=self.inv_model_x,
                 y_inv_fit=self.inv_model_y,
                 z_inv_fit=self.inv_model_z,
-                voxel_size=self.voxel_size,
                 degree=self.degree,
                 timestamp= self.timestamp,
                 corrected_wavelength=corrected_wavelength,

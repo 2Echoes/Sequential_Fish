@@ -132,8 +132,7 @@ def run(run_path,*args) :
             run_path=run_path,
             Spots=Spots,
             control_genes=analysis_parameters.control_genes,
-            threshold_coloc_zscore=analysis_parameters.threshold_coloc_zscore,
-            thresold_coloc_value=analysis_parameters.threshold_coloc_value
+            inertia_threshold=analysis_parameters.inertia_threshold
         )
 
         if not exploration_sucess :

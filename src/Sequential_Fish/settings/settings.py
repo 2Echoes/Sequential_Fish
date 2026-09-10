@@ -28,7 +28,7 @@ def get_settings(
 
     settings_path = os.path.join(run_path , f"{settings_name}_settings.json")
     if os.path.isfile(settings_path) :
-        with open(settings_path, mode="r") as setting_file:
+        with open(settings_path, mode="r", encoding="utf-8") as setting_file:
             try :
                 saved_settings = setting_file.read()
                 settings = model.model_validate_json(saved_settings)
@@ -61,7 +61,7 @@ def write_settings(
     if not isinstance(settings, (PipelineParameters, AnalysisParameters)) :
         raise TypeError("Expected SettingsDict type, got {}".format(type(settings)))
     filename = settings.get_filename()
-    with open(os.path.join(run_path , f"{filename}"), mode="w") as f:
+    with open(os.path.join(run_path , f"{filename}"), mode="w",encoding="utf-8") as f:
         json.dump(settings.model_dump(), f, indent=4)
 
 
