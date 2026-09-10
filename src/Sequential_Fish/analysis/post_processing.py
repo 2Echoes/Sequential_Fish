@@ -259,7 +259,7 @@ def _cache_colocalization_data(
 
     cached_data_path = os.path.join(run_path,"result_tables", "coloc_truth_table.feather")
     zscore_path = os.path.join(run_path,"analysis","data","coloc_zscores.csv")
-    cache_attr = ["coloc_distance", "FILTER_CYCLE", "RENAME_RULE","foci_rnas"] # cached data contains all run RNAs on purpose they are filtered when loading the table and using it for figures.
+    cache_attr = ["coloc_distance", "FILTER_CYCLE", "RENAME_RULE","foci_rnas", "reference_wavelength"] # cached data contains all run RNAs on purpose they are filtered when loading the table and using it for figures.
     if os.path.isfile(cached_data_path) : 
         coloc_truth_df = pd.read_feather(cached_data_path, columns=["spot_id"])
         attrs : dict = coloc_truth_df.attrs
