@@ -11,7 +11,5 @@ from .correction import apply_polynomial_transform_to_signal
 from .correction import get_polynomial_features
 from .correction import correct_Spots_dataframe
 
-from .constant import CALIBRATION_FOLDER
-
 def run(run_path, *args) :
     raise NotImplementedError("This script was moved to the viewer module")

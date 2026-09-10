@@ -59,6 +59,7 @@ def run(run_path,*args) :
         Spots=Spots,
         Cell=Cell,
         Detection=Detection,
+        run_path=run_path,
         reference_wavelength = analysis_parameters.reference_wavelength
     )
 
@@ -112,16 +113,7 @@ def run(run_path,*args) :
         
     ))
     if any_paircoloc or "all" in args:
-
-<<<<<<< HEAD
-        if not analysis_parameters.foci_rnas is None :
-            Spots = _add_foci_to_analysis(
-                Spots,
-                foci_rnas=analysis_parameters.foci_rnas
-            )
         
-=======
->>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
         coloc_main(
             filtered_Spots=Spots,
             Cell=Cell,
@@ -131,11 +123,7 @@ def run(run_path,*args) :
             significance= analysis_parameters.coloc_significance,
             frameon=analysis_parameters.frameon
         )
-<<<<<<< HEAD
         
-=======
->>>>>>> a2061ba6e64211497e0bb40be5dd73c087d7592d
-
     # Exploratory analysis
     exploration_kw = ["multivariate","data", "structure", "all"]
     if any((kw in args for kw in exploration_kw)) :

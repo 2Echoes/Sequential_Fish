@@ -144,7 +144,7 @@ def colocalization_exploration(
     dendogram_ax = fig.add_subplot(grid[1:,3:])
 
     #1.Multiple Compnent analysis
-    scree_ax, mca_intertia_ax = _multiple_component_analsis(
+    scree_ax, mca_intertia_ax, mca = _multiple_component_analsis(
         data=data,
         scree_ax=scree_ax,
         mca_intertia_ax=mca_intertia_ax
@@ -152,7 +152,8 @@ def colocalization_exploration(
 
     #2. Network_plots
     network_graph_ax = _network_analysis(
-        data, 
+        data,
+        mca, 
         zscores=zscores,
         network_graph_ax=network_graph_ax,
         threshold_value=threshold_coloc_rate,
@@ -180,7 +181,7 @@ def _multiple_component_analsis(
     scree_ax = _make_scree_plot(inertia_contribution, scree_ax)
     mca_intertia_ax = _make_contribution_plot(mca, inertia_contribution, mca_intertia_ax)
 
-    return scree_ax, mca_intertia_ax
+    return scree_ax, mca_intertia_ax, mca
 
 def _run_mca(
         data : pd.DataFrame
@@ -289,13 +290,14 @@ def _make_contribution_plot(
 #2.
 def _network_analysis(
         data : pd.DataFrame,
+        mca : prince.mca, 
         zscores : pd.DataFrame,
         network_graph_ax : Axes,
         threshold_zscore : float = 1,
         threshold_value : float =.1,
 ) :
 
-    G, edges = _construct_network(data, zscores, threshold_zscore=threshold_zscore, threshold_value=threshold_value)
+    G, edges = _construct_network(data, mca, zscores, threshold_zscore=threshold_zscore, threshold_value=threshold_value)
     partition = _find_communities(G)
     network_graph_ax = _make_network_plot(
         G,
@@ -311,7 +313,8 @@ def _network_analysis(
     return network_graph_ax
 
 def _construct_network(
-        data : pd.DataFrame, 
+        data : pd.DataFrame,
+        mca : prince.mca, 
         zscores:pd.DataFrame,
         threshold_zscore : float = 1,
         threshold_value: float = .1 ,
@@ -322,12 +325,24 @@ def _construct_network(
         "value" : {"pairs" : [], "width" : [], "coloc_rate" : []},
     }
 
+    inertia_contribution = _compute_intertia_contribution(mca)
+    elbow_point = _find_elbow(inertia_contribution)
+    contributions = mca.column_contributions_
+    contributions = contributions.iloc[:,:elbow_point+1]
+    contributions.index = pd.MultiIndex.from_arrays(zip(*contributions.index.str.split("__").to_list()))
+    contributions = contributions.reset_index(drop=False).sort_values(["level_1","level_0"])
+
+    print(contributions)
+
     # Add nodes (RNAs)
     for rna in data.columns:
         G.add_node(rna)
 
-    for rna1, rna2 in permutations(data.columns.to_list(),r=2) :
+    
 
+    print("Nodes", G.nodes)
+
+    for rna1, rna2 in permutations(data.columns.to_list(),r=2) :
         if rna1 == rna2 : continue
         zscore = zscores.at[rna1,rna2]
 
@@ -346,6 +361,7 @@ def _construct_network(
 
         if coloc_rate >= threshold_value or abs(zscore)>=threshold_zscore :
             G.add_edge(rna1,rna2, weight=coloc_rate)
+
 
     return G, edges
 
@@ -416,6 +432,8 @@ def _make_network_plot(
         G, pos,
         ax=ax
         )
+
+    plt.show()
 
     return ax
 

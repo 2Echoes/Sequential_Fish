@@ -50,7 +50,7 @@ def Spots_post_processing(
             Spots=Spots,
             reference_wavelength= reference_wavelength
         )
-    elif not reference_wavelength is None or not run_path is None :
+    elif not reference_wavelength is None and run_path is None :
         raise ValueError("To correct chromatic aberrations reference_wavelength and run_path must not be None. 'run_path' can also be any path where /saved_calibrations can be found.")
 
     return Spots
@@ -286,10 +286,10 @@ def _cache_colocalization_data(
         Cell = pd.read_feather(os.path.join(result_path,"Cell.feather"))
 
         Spots = Spots_post_processing(
-            run_path=run_path,
             Spots=Spots,
             Cell=Cell,
             Detection=Detection,
+            run_path=run_path,
             reference_wavelength=analysis_parameters.reference_wavelength
         )
 
