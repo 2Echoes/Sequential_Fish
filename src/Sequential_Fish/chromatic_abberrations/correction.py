@@ -4,7 +4,6 @@ from scipy.ndimage import map_coordinates
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from .calibration import calibration_exist, load_calibration
-from ..tools import get_voxel_size
 
 def apply_polynomial_transform_to_signal(
         image : np.ndarray, 

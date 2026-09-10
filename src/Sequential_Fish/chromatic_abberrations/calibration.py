@@ -1,4 +1,5 @@
 import numpy as np
+import logging
 import json, os, joblib
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
@@ -7,7 +8,7 @@ from sklearn.neighbors import NearestNeighbors
 from ..customtypes import Calibration
 
 def get_calibration_folder(run_path) :
-    return os.path.join(run_path,"/saved_calibrations/")
+    return os.path.join(run_path,"saved_calibrations")
 
 
 def match_beads(coords1 : np.ndarray, coords2 : np.ndarray, max_dist=5):
@@ -16,7 +17,6 @@ def match_beads(coords1 : np.ndarray, coords2 : np.ndarray, max_dist=5):
     distances, indices = nn.kneighbors(coords1)
 
     if max_dist is None :
-        print("all")
         matches = distances[:, 0] >= 0 #all
     else:
         matches = distances[:, 0] < max_dist
@@ -44,15 +44,11 @@ def fit_polynomial_transform_3d(
     weights = np.ones(len(dst_yx), dtype=int)
 
     if center is not None:
-        print("using center : ", True)
         y0, x0 = center
         src_yx = np.concat([np.array([[y0,x0]], dtype=src_yx.dtype), src_yx], axis=0)
         dst_yx = np.concat([np.array([[y0,x0]], dtype=dst_yx.dtype), dst_yx], axis=0)
         weights = np.concat([np.array([len(dst_yx)*100], dtype=weights.dtype), weights], axis=0)
 
-        print("src_yx : ", src_yx.shape)
-        print("dst_yx : ", dst_yx.shape)
-        print("weights : ", weights.shape)
 
     # Generate polynomial features WITHOUT a bias term
     poly = PolynomialFeatures(degree=degree, include_bias=True)
@@ -69,7 +65,8 @@ def _load_calibration_index(run_path : str) -> dict :
     Create one if doesn't exist.
     """
 
-    index_path = get_calibration_folder(run_path)
+    calibration_folder = get_calibration_folder(run_path)
+    index_path = os.path.join(calibration_folder, "index.json")
 
     if os.path.isfile(index_path) :
         with open(index_path, 'r', encoding='utf-8') as f:
@@ -110,13 +107,14 @@ def load_calibration(
         corrected_wavelength: int,
         ) -> Calibration :
 
-    print("Loading CALIBRATION")
     index = _load_calibration_index(run_path)
     calibration_key = _make_calibration_key(reference_wavelength, corrected_wavelength)
 
     if calibration_key not in index.keys() :
         raise KeyError(f"No calibration found for reference wavelength {reference_wavelength} and corrected  wavelength {corrected_wavelength}.")
 
+
+    logging.info(f'Loading calibration at {index[calibration_key]}')
     calibration = joblib.load(index[calibration_key])
 
     return calibration
@@ -178,4 +176,4 @@ def save_fit_model(
         filename= filename
     )
     
-    print(f"Calibration saved at {filename}")
+    logging.info(f"Calibration saved at {filename}")

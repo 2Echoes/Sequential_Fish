@@ -1,9 +1,9 @@
 from typing import cast
-
+import os, logging
 
 from .types import ThreadedWidget, NapariWidget, UserInputError
 from ..tools import get_datetime
-from ..chromatic_abberrations import calibration_exist, load_calibration
+from ..chromatic_abberrations import calibration_exist, load_calibration, get_calibration_folder
 from ..chromatic_abberrations.calibration import match_beads, fit_polynomial_transform_3d, save_fit_model
 from ..chromatic_abberrations import apply_polynomial_transform_spots, apply_polynomial_transform_to_signal
 
@@ -22,9 +22,10 @@ from sklearn.preprocessing import PolynomialFeatures
 class ChromaticWidget(ThreadedWidget) :
 
     def __init__(self, *,run_path : str, voxel_size : tuple[int,int,int], wavelength_list : list[int], viewer: Viewer):
-        self.run_path = run_path
+        self.run_path = run_path if run_path.endswith(os.sep) else run_path + os.sep
         self.voxel_size =voxel_size
         self.wavelength_list = wavelength_list
+        self.calibration_folder = get_calibration_folder(self.run_path)
         super().__init__(viewer=viewer)
 
 
@@ -71,7 +72,7 @@ class SpotCorrector(ChromaticWidget) :
             if not calibration_exist(self.run_path, reference_wavelength, corrected_wavelength=layer_wavelenth) :
                 raise UserInputError(f"Not calibration was found for reference wavelength : {reference_wavelength}nm and layer wavelength : {layer_wavelenth}")
 
-            calibration = load_calibration(reference_wavelength=reference_wavelength, corrected_wavelength=layer_wavelenth)
+            calibration = load_calibration(run_path=self.run_path, reference_wavelength=reference_wavelength, corrected_wavelength=layer_wavelenth)
 
             if Spots.data.ndim == 3 :
                 spot_array = np.concat([
@@ -184,13 +185,11 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
         self.inv_model_x = LinearRegression()
         self.inv_model_y = LinearRegression()
         self.inv_model_z = LinearRegression()
-        self.calibration_folder = CALIBRATION_FOLDER
         self.degree = 2
         self.timestamp = get_datetime()
         self.save_widget = self._create_save_widget()
         
         super().__init__(run_path=run_path, viewer=viewer, voxel_size=voxel_size, wavelength_list=wavelength_list)
-
         self.register_widget(self.save_widget)
 
     def _create_widget(self):
@@ -218,7 +217,7 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
         ) :
 
             if not tuple(image_abberation.scale) == tuple(spatial_reference.scale) == tuple(spatial_reference_shifted.scale) :
-                print(f"Scale is not uniform between selected layers.\nimage to correct : {tuple(image_abberation.scale)}\nreference points : {spatial_reference.scale}\npoints with abberation : {spatial_reference_shifted.scale}")
+                logging.info(f"Scale is not uniform between selected layers.\nimage to correct : {tuple(image_abberation.scale)}\nreference points : {spatial_reference.scale}\npoints with abberation : {spatial_reference_shifted.scale}")
 
             coords1 = np.asarray(spatial_reference.data)
             coords2 = np.asarray(spatial_reference_shifted.data)
@@ -242,8 +241,6 @@ class ChromaticAberrationCalibrator(ChromaticWidget) :
                 optical_center = self.viewer.layers["Optical Center"].optical_center
             else :
                 optical_center = None
-
-            print("optical center : ", optical_center)
 
             self.polynomial_features, self.model_x, self.model_y, self.model_z = fit_polynomial_transform_3d(
                                                 beads,
