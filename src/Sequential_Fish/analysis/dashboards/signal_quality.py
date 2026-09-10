@@ -100,7 +100,6 @@ def plot_endcycle_coloc_rates(
         y="colocalization rate",
         hue="type", palette=["#fb9a99", "#80b1d3"],
         edgecolor = "black",
-        orient='h',
         ax=ax
     )
 
@@ -212,7 +211,7 @@ def _get_coloc_rates_for_checkers(
     coloc_rate_table = create_cell_coloc_rates_df(coloc_truth_df=coloc_truth_table)
     coloc_rate_table = compute_coloc_rates_mean(coloc_rate_table)
 
-    coloc_rates = {key : float(coloc_rate_table.at[pair[0],pair[1]]) for key,pair in checkers.items()}
+    coloc_rates = {key : float(coloc_rate_table.at[pair[1],pair[0]]) for key,pair in checkers.items()}
 
     return coloc_rates
 
